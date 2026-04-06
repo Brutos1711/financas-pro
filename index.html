@@ -87,10 +87,89 @@ button{
 </style>
 </head>
 
+<script type="module">
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } 
+from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import { onSnapshot } 
+from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } 
+from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDC9bzY8IsavRdL9N4L8B0IQgOSQ-qgE_Y",
+  authDomain: "financasbarreto-30f9d.firebaseapp.com",
+  projectId: "financasbarreto-30f9d",
+  storageBucket: "financasbarreto-30f9d.firebasestorage.app",
+  messagingSenderId: "673333294399",
+  appId: "1:673333294399:web:86fc5b776191e42d648f8a"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// 🔥 SALVAR ONLINE
+async function salvarOnline(uid, dado){
+  await addDoc(collection(db, "usuarios", uid, "transacoes"), dado);
+}
+
+// 🔥 CARREGAR
+async function carregar(){
+  const querySnapshot = await getDocs(collection(db, "transacoes"));
+  dados = [];
+  querySnapshot.forEach(docItem => {
+    dados.push({ id: docItem.id, ...docItem.data() });
+  });
+  atualizar();
+}
+
+// 🔥 REMOVER ONLINE
+async function removerOnline(uid, id){
+  await deleteDoc(doc(db, "usuarios", uid, "transacoes", id));
+}
+
+async function registrar(email, senha){
+  await createUserWithEmailAndPassword(auth, email, senha);
+}
+
+async function login(email, senha){
+  await signInWithEmailAndPassword(auth, email, senha);
+}
+
+function logout(){
+  signOut(auth);
+}
+
+onAuthStateChanged(auth, user => {
+  if(user){
+    carregarTempoReal(user.uid);
+  } else{
+    dados = [];
+    atualizar();
+  }
+});
+  
+window.salvarOnline = salvarOnline;
+window.carregar = carregar;
+window.removerOnline = removerOnline;
+  window.login = login;
+window.registrar = registrar;
+window.logout = logout;
+  
+</script>
+  
 <body>
 
 <header>💳 Finanças PRO</header>
 
+<div id="loginBox">
+  <input id="email" placeholder="Email">
+  <input id="senha" type="password" placeholder="Senha">
+  <button onclick="loginUI()">Entrar</button>
+  <button onclick="registrarUI()">Registrar</button>
+</div>
+  
 <div class="card grid">
   <div class="stat">
     <small>Saldo</small>
@@ -158,24 +237,28 @@ button{
 
 <script>
 
-let dados = JSON.parse(localStorage.getItem("dados")) || [];
+let dados = [];
 let meta = Number(localStorage.getItem("meta")) || 0;
 let reserva = Number(localStorage.getItem("reserva")) || 0;
 
 const formatar = v =>
   v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
-function salvar(){
-  localStorage.setItem("dados", JSON.stringify(dados));
+function loginUI(){
+  login(email.value, senha.value);
 }
 
+function registrarUI(){
+  registrar(email.value, senha.value);
+}
+  
 function definirMeta(){
   meta = Number(document.getElementById("metaValor").value);
   localStorage.setItem("meta", meta);
   atualizar();
 }
 
-function add(){
+async function add(){
   let valor = parseFloat(document.getElementById("valor").value);
   let tipo = document.getElementById("tipo").value;
   let categoria = document.getElementById("categoria").value;
@@ -192,7 +275,9 @@ function add(){
 
   let hoje = new Date();
 
-  dados.push({
+  if(!user) return alert("Faça login primeiro");
+
+await salvarOnline(user.uid, {
     valor,
     tipo,
     categoria,
@@ -200,29 +285,34 @@ function add(){
     dataISO: hoje.toISOString().split("T")[0]
   });
 
-  salvar();
-  atualizar();
 }
-
-function remover(i){
-  dados.splice(i,1);
-  salvar();
-  atualizar();
-}
-
+    
 let chart;
 
-function gerarGrafico(entradas, saidas){
+function graficoCategorias(){
+  let categorias = {};
+
+  dados.forEach(d=>{
+    if(d.tipo === "saida"){
+      categorias[d.categoria] = (categorias[d.categoria] || 0) + d.valor;
+    }
+  });
+
+function remover(i){
+  const user = auth.currentUser;
+  removerOnline(user.uid, dados[i].id);
+}
+  
   const ctx = document.getElementById("grafico").getContext("2d");
 
   if(chart) chart.destroy();
 
   chart = new Chart(ctx,{
-    type:"doughnut",
+    type:"pie",
     data:{
-      labels:["Entradas","Saídas"],
+      labels:Object.keys(categorias),
       datasets:[{
-        data:[entradas,saidas]
+        data:Object.values(categorias)
       }]
     }
   });
@@ -266,19 +356,65 @@ function atualizar(){
   document.getElementById("saidas").innerText = formatar(saidas);
   document.getElementById("reserva").innerText = formatar(reserva);
 
-  if(meta > 0){
-    document.getElementById("metaInfo").innerText =
-      "Meta: " + formatar(meta) +
-      " | Falta: " + formatar(meta - saldo);
-  }
+if(meta > 0){
+  let falta = meta - saldo;
+  if(falta < 0) falta = 0;
 
-  gerarGrafico(entradas, saidas);
+  document.getElementById("metaInfo").innerText =
+    "Meta: " + formatar(meta) +
+    " | Falta: " + formatar(falta);
 }
 
+graficoCategorias();
+}
+
+function graficoEvolucao(){
+  let meses = {};
+
+  dados.forEach(d=>{
+    let mes = d.dataISO.slice(0,7);
+    if(!meses[mes]) meses[mes] = 0;
+
+    if(d.tipo==="entrada") meses[mes]+=d.valor;
+    else meses[mes]-=d.valor;
+  });
+
+  const ctx = document.getElementById("grafico").getContext("2d");
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(ctx,{
+    type:"line",
+    data:{
+      labels:Object.keys(meses),
+      datasets:[{
+        label:"Saldo",
+        data:Object.values(meses)
+      }]
+    }
+  });
+}
+
+function carregarTempoReal(uid){
+  const ref = collection(db, "usuarios", uid, "transacoes");
+
+  onSnapshot(ref, snapshot => {
+    dados = [];
+    snapshot.forEach(docItem => {
+      dados.push({ id: docItem.id, ...docItem.data() });
+    });
+    atualizar();
+  });
+}
+  
 document.getElementById("filtro").addEventListener("input", atualizar);
 
-atualizar();
+carregar();
 
+window.add = add;
+window.remover = remover;
+window.definirMeta = definirMeta;
+    
 </script>
 
 </body>
