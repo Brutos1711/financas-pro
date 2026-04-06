@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Finanças PRO</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --bg:#0f172a;
+  --card:#1e293b;
+  --accent:#22c55e;
+  --danger:#ef4444;
+  --text:#e2e8f0;
+}
+
+body{
+  font-family: Arial;
+  background:var(--bg);
+  color:var(--text);
+  margin:0;
+  padding:15px;
+}
+
+header{
+  background:linear-gradient(135deg,#22c55e,#15803d);
+  padding:15px;
+  border-radius:12px;
+  text-align:center;
+  font-weight:bold;
+  font-size:18px;
+}
+
+.card{
+  background:var(--card);
+  padding:15px;
+  border-radius:12px;
+  margin-top:15px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+
+.stat{
+  text-align:center;
+}
+
+input,select{
+  width:100%;
+  padding:8px;
+  border:none;
+  border-radius:8px;
+  margin:5px 0;
+}
+
+button{
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:var(--accent);
+  color:white;
+  cursor:pointer;
+}
+
+.transacao{
+  display:flex;
+  justify-content:space-between;
+  padding:10px;
+  border-bottom:1px solid #334155;
+}
+
+.entrada{color:#22c55e}
+.saida{color:#ef4444}
+
+.delete{
+  background:var(--danger);
+  padding:4px 8px;
+  font-size:12px;
+  border-radius:6px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>💳 Finanças PRO</header>
+
+<div class="card grid">
+  <div class="stat">
+    <small>Saldo</small>
+    <h3 id="saldo">R$0</h3>
+  </div>
+  <div class="stat">
+    <small>Entradas</small>
+    <h3 id="entradas">R$0</h3>
+  </div>
+  <div class="stat">
+    <small>Saídas</small>
+    <h3 id="saidas">R$0</h3>
+  </div>
+</div>
+
+<canvas id="grafico"></canvas>
+
+<div class="card">
+  <h3>Meta</h3>
+  <input id="metaValor" placeholder="Valor da meta">
+  <button onclick="definirMeta()">Salvar Meta</button>
+  <p id="metaInfo"></p>
+</div>
+
+<div class="card">
+  <h3>Reserva Automática (%)</h3>
+  <input id="reservaPct" placeholder="Ex: 10">
+</div>
+
+<div class="card">
+  <h3>Reserva</h3>
+  <h2 id="reserva">R$0</h2>
+</div>
+
+<div class="card">
+  <h3>Nova Transação</h3>
+  <input id="valor" placeholder="Valor">
+  
+  <select id="tipo">
+    <option value="entrada">Entrada</option>
+    <option value="saida">Saída</option>
+  </select>
+
+<select id="categoria">
+  <optgroup label="Renda">
+    <option>Salário</option>
+    <option>Extra</option>
+  </optgroup>
+
+  <optgroup label="Despesas">
+    <option>Mercado</option>
+    <option>Internet</option>
+    <option>Lazer</option>
+  </optgroup>
+</select>
+
+  <button onclick="add()">Adicionar</button>
+</div>
+
+<div class="card">
+  <h3>Histórico</h3>
+  <input type="date" id="filtro">
+  <div id="lista"></div>
+</div>
+
+<script>
+
+let dados = JSON.parse(localStorage.getItem("dados")) || [];
+let meta = Number(localStorage.getItem("meta")) || 0;
+let reserva = Number(localStorage.getItem("reserva")) || 0;
+
+const formatar = v =>
+  v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+
+function salvar(){
+  localStorage.setItem("dados", JSON.stringify(dados));
+}
+
+function definirMeta(){
+  meta = Number(document.getElementById("metaValor").value);
+  localStorage.setItem("meta", meta);
+  atualizar();
+}
+
+function add(){
+  let valor = parseFloat(document.getElementById("valor").value);
+  let tipo = document.getElementById("tipo").value;
+  let categoria = document.getElementById("categoria").value;
+  let reservaPct = Number(document.getElementById("reservaPct").value) || 0;
+
+  if(!valor) return alert("Digite valor");
+
+  if(tipo === "entrada"){
+    let guardar = valor * (reservaPct / 100);
+    reserva += guardar;
+    valor -= guardar;
+    localStorage.setItem("reserva", reserva);
+  }
+
+  let hoje = new Date();
+
+  dados.push({
+    valor,
+    tipo,
+    categoria,
+    data: hoje.toLocaleDateString(),
+    dataISO: hoje.toISOString().split("T")[0]
+  });
+
+  salvar();
+  atualizar();
+}
+
+function remover(i){
+  dados.splice(i,1);
+  salvar();
+  atualizar();
+}
+
+let chart;
+
+function gerarGrafico(entradas, saidas){
+  const ctx = document.getElementById("grafico").getContext("2d");
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(ctx,{
+    type:"doughnut",
+    data:{
+      labels:["Entradas","Saídas"],
+      datasets:[{
+        data:[entradas,saidas]
+      }]
+    }
+  });
+}
+
+function atualizar(){
+  let saldo=0, entradas=0, saidas=0;
+
+  let filtro = document.getElementById("filtro").value;
+  const lista = document.getElementById("lista");
+  lista.innerHTML="";
+
+  dados.forEach((d,i)=>{
+
+    if(filtro && d.dataISO !== filtro) return;
+
+    if(d.tipo==="entrada"){
+      saldo += d.valor;
+      entradas += d.valor;
+    } else{
+      saldo -= d.valor;
+      saidas += d.valor;
+    }
+
+    lista.innerHTML += `
+      <div class="transacao">
+        <div>
+          <strong>${formatar(d.valor)}</strong><br>
+          <small>${d.categoria} • ${d.data}</small>
+        </div>
+        <div>
+          <span class="${d.tipo}">${d.tipo}</span>
+          <button class="delete" onclick="remover(${i})">X</button>
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById("saldo").innerText = formatar(saldo);
+  document.getElementById("entradas").innerText = formatar(entradas);
+  document.getElementById("saidas").innerText = formatar(saidas);
+  document.getElementById("reserva").innerText = formatar(reserva);
+
+  if(meta > 0){
+    document.getElementById("metaInfo").innerText =
+      "Meta: " + formatar(meta) +
+      " | Falta: " + formatar(meta - saldo);
+  }
+
+  gerarGrafico(entradas, saidas);
+}
+
+document.getElementById("filtro").addEventListener("input", atualizar);
+
+atualizar();
+
+</script>
+
+</body>
+</html>
