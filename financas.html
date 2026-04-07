@@ -114,9 +114,13 @@ import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc
 
 // CONFIG
 const firebaseConfig = {
-  apiKey: "SUA_KEY",
-  authDomain: "SEU_AUTH",
-  projectId: "SEU_PROJECT"
+  apiKey: "AIzaSyDC9bzY8IsavRdL9N4L8B0IQgOSQ-qgE_Y",
+  authDomain: "financasbarreto-30f9d.firebaseapp.com",
+  projectId: "financasbarreto-30f9d",
+  storageBucket: "financasbarreto-30f9d.firebasestorage.app",
+  messagingSenderId: "673333294399",
+  appId: "1:673333294399:web:86fc5b776191e42d648f8a",
+  measurementId: "G-7RC7ES7824"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -279,14 +283,19 @@ function atualizar(){
 }
 
 // AUTH
-onAuthStateChanged(auth,user=>{
-  if(!user) window.location.href="login.html";
-  else{
-    carregar("rendaFixa", v=>rendaFixa=v);
-    carregar("despesasFixas", v=>despFixa=v);
-    carregar("extras", v=>extras=v);
-    carregar("despesasMes", v=>despesas=v);
+onAuthStateChanged(auth, user => {
+  if (user === null) {
+    console.log("Não logado → redirecionando");
+    window.location.href = "login.html";
+    return;
   }
+
+  console.log("Usuário logado:", user.uid);
+
+  carregar("rendaFixa", v=>rendaFixa=v);
+  carregar("despesasFixas", v=>despFixa=v);
+  carregar("extras", v=>extras=v);
+  carregar("despesasMes", v=>despesas=v);
 });
 
 </script>
