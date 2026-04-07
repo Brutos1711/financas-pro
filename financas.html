@@ -43,7 +43,11 @@ button:hover{opacity:0.9; transform:scale(1.02); transition:0.2s;}
 <div class="card">
   <h3>Renda Fixa</h3>
   <input id="rendaFixaValor" placeholder="Valor">
-  <input id="rendaFixaCategoria" placeholder="Categoria">
+  <select id="rendaFixaCategoria">
+  <option>Salário</option>
+  <option>Freelance</option>
+  <option>Investimentos</option>
+</select>
   <button onclick="addRendaFixa()">Adicionar Renda Fixa</button>
   <div id="listaRendaFixa"></div>
 </div>
@@ -94,118 +98,198 @@ button:hover{opacity:0.9; transform:scale(1.02); transition:0.2s;}
 <div class="card">
   <h3>Previsão de saldo futuro (30 dias)</h3>
   <p id="previsao"></p>
+
   <button onclick="logout()">Sair</button>
+
+  <button onclick="limparDados()" style="background:#ef4444; margin-top:10px;">
+    ⚠️ Resetar Tudo
+  </button>
 </div>
 
 <script type="module">
-// Firebase imports
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-// Config
+// CONFIG
 const firebaseConfig = {
-  apiKey: "AIzaSyDC9bzY8IsavRdL9N4L8B0IQgOSQ-qgE_Y",
-  authDomain: "financasbarreto-30f9d.firebaseapp.com",
-  projectId: "financasbarreto-30f9d",
-  storageBucket: "financasbarreto-30f9d.firebasestorage.app",
-  messagingSenderId: "673333294399",
-  appId: "1:673333294399:web:86fc5b776191e42d648f8a",
-  measurementId: "G-7RC7ES7824"
+  apiKey: "SUA_KEY",
+  authDomain: "SEU_AUTH",
+  projectId: "SEU_PROJECT"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Elementos
-const saldoElem=document.getElementById("saldo");
-const entradasElem=document.getElementById("entradas");
-const saidasElem=document.getElementById("saidas");
-const reservaElem=document.getElementById("reserva");
-const barraMeta=document.getElementById("barraMeta");
-const alertaMeta=document.getElementById("alertaMeta");
-const metaInfo=document.getElementById("metaInfo");
-const previsao=document.getElementById("previsao");
-
-// Variáveis
-let meta = Number(localStorage.getItem("meta"))||0;
-let reserva = Number(localStorage.getItem("reserva"))||0;
+// VARIÁVEIS
 let rendaFixa=[], despFixa=[], extras=[], despesas=[];
+let meta = Number(localStorage.getItem("meta"))||0;
 
-// Logout
-function logout(){ signOut(auth).then(()=>window.location.href="login.html"); }
-window.logout = logout;
-function definirMeta(){ meta=Number(document.getElementById("metaValor").value)||0; localStorage.setItem("meta",meta); atualizar(); }
-window.definirMeta = definirMeta;
+// LOGOUT
+window.logout = ()=> signOut(auth).then(()=>window.location.href="login.html");
 
-// Funções genéricas para adicionar itens
-async function adicionarItem(collectionName, valor, categoria, data=null){
+// META
+window.definirMeta = ()=>{
+  meta = Number(metaValor.value)||0;
+  localStorage.setItem("meta",meta);
+  atualizar();
+};
+
+// 🔥 ADICIONAR ITEM GENÉRICO
+async function adicionarItem(col, data){
   const user = auth.currentUser;
-  if(!user) return alert("Faça login primeiro");
-  const d = {valor:Number(valor), categoria, data: data||new Date().toISOString().split("T")[0]};
-  await addDoc(collection(db, "usuarios", user.uid, collectionName), d);
+  if(!user) return alert("Faça login");
+
+  await addDoc(collection(db,"usuarios",user.uid,col), data);
 }
 
-// Funções específicas
-window.addRendaFixa = ()=>{ const v=document.getElementById("rendaFixaValor").value, c=document.getElementById("rendaFixaCategoria").value; if(!v||!c)return; adicionarItem("rendaFixa",v,c); document.getElementById("rendaFixaValor").value=""; };
-window.addDespFixa = ()=>{ const v=document.getElementById("despFixaValor").value, c=document.getElementById("despFixaCategoria").value; if(!v||!c)return; adicionarItem("despesasFixas",v,c); document.getElementById("despFixaValor").value=""; };
-window.addExtra = ()=>{ const v=document.getElementById("extraValor").value, c=document.getElementById("extraCategoria").value, d=document.getElementById("extraData").value; if(!v||!c||!d)return; adicionarItem("extras",v,c,d); document.getElementById("extraValor").value=""; };
-window.addDesp = ()=>{ const v=document.getElementById("despValor").value, c=document.getElementById("despCategoria").value, d=document.getElementById("despData").value; if(!v||!c||!d)return; adicionarItem("despesasMes",v,c,d); document.getElementById("despValor").value=""; };
+// ✅ RENDA FIXA (com categoria padrão)
+window.addRendaFixa = ()=>{
+  const valor = rendaFixaValor.value;
+  const categoria = rendaFixaCategoria.value || "Salário";
+  if(!valor) return;
 
-// Carregar coleções em tempo real
-function carregarColecao(nome, setter){
-  const user = auth.currentUser; if(!user) return;
-  const ref = collection(db,"usuarios",user.uid,nome);
-  onSnapshot(ref, snapshot=>{
-    const arr=[]; snapshot.forEach(d=>arr.push({id:d.id,...d.data()})); setter(arr); atualizar();
+  adicionarItem("rendaFixa",{valor:Number(valor),categoria});
+};
+
+// 🔥 DESPESA FIXA COM PARCELA
+window.addDespFixa = ()=>{
+  const valor = despFixaValor.value;
+  const categoria = despFixaCategoria.value;
+  const tipo = prompt("Digite: parcelado ou recorrente");
+
+  if(!valor || !categoria || !tipo) return;
+
+  if(tipo === "parcelado"){
+    const total = Number(prompt("Total de parcelas"));
+    adicionarItem("despesasFixas",{
+      valor:Number(valor),
+      categoria,
+      tipo:"parcelado",
+      parcelasTotal: total,
+      parcelasPagas: 0
+    });
+  } else {
+    adicionarItem("despesasFixas",{
+      valor:Number(valor),
+      categoria,
+      tipo:"recorrente"
+    });
+  }
+};
+
+// PAGAR PARCELA
+window.pagarParcela = async(id)=>{
+  const user = auth.currentUser;
+  const ref = doc(db,"usuarios",user.uid,"despesasFixas",id);
+  const item = despFixa.find(d=>d.id===id);
+
+  if(item.parcelasPagas + 1 >= item.parcelasTotal){
+    await deleteDoc(ref);
+  } else {
+    await updateDoc(ref,{ parcelasPagas: item.parcelasPagas + 1 });
+  }
+};
+
+// EDITAR
+window.editarItem = async(col,id,valor,categoria)=>{
+  const novoValor = prompt("Novo valor:", valor);
+  const novaCategoria = prompt("Nova categoria:", categoria);
+  if(!novoValor || !novaCategoria) return;
+
+  const user = auth.currentUser;
+  await updateDoc(doc(db,"usuarios",user.uid,col,id),{
+    valor:Number(novoValor),
+    categoria:novaCategoria
+  });
+};
+
+// RESET
+window.limparDados = async ()=>{
+  if(!confirm("Apagar tudo?")) return;
+  if(prompt("Digite CONFIRMAR") !== "CONFIRMAR") return;
+
+  const user = auth.currentUser;
+  const cols = ["rendaFixa","despesasFixas","extras","despesasMes"];
+
+  for(const c of cols){
+    const snap = await getDocs(collection(db,"usuarios",user.uid,c));
+    for(const d of snap.docs){
+      await deleteDoc(d.ref);
+    }
+  }
+
+  alert("Tudo apagado");
+};
+
+// LISTENER
+function carregar(col, setter){
+  const user = auth.currentUser;
+  const ref = collection(db,"usuarios",user.uid,col);
+
+  onSnapshot(ref,snap=>{
+    const arr=[];
+    snap.forEach(d=>arr.push({id:d.id,...d.data()}));
+    setter(arr);
+    atualizar();
   });
 }
 
-// Atualizar tela
-let chartCategorias, chartEvolucao;
+// UI
 function atualizar(){
-  // Reset
   let saldo=0, entradas=0, saidas=0;
-  let listaIds = ["listaRendaFixa","listaDespFixa","listaExtras","listaDespesas"];
-  listaIds.forEach(id=>document.getElementById(id).innerHTML="");
 
-  // Entradas: renda fixa + extras
-  rendaFixa.forEach(d=>{saldo+=d.valor; entradas+=d.valor; document.getElementById("listaRendaFixa").innerHTML+=`<div class="transacao"><div>${d.categoria} - ${d.valor}</div></div>`;});
-  extras.forEach(d=>{saldo+=d.valor; entradas+=d.valor; document.getElementById("listaExtras").innerHTML+=`<div class="transacao"><div>${d.categoria} - ${d.valor}</div></div>`;});
+  listaRendaFixa.innerHTML="";
+  listaDespFixa.innerHTML="";
 
-  // Saídas: despesas fixas + despesas variáveis
-  despFixa.forEach(d=>{saldo-=d.valor; saidas+=d.valor; document.getElementById("listaDespFixa").innerHTML+=`<div class="transacao"><div>${d.categoria} - ${d.valor}</div></div>`;});
-  despesas.forEach(d=>{saldo-=d.valor; saidas+=d.valor; document.getElementById("listaDespesas").innerHTML+=`<div class="transacao"><div>${d.categoria} - ${d.valor}</div></div>`;});
+  rendaFixa.forEach(d=>{
+    saldo+=d.valor; entradas+=d.valor;
+    listaRendaFixa.innerHTML+=`
+      <div class="transacao">
+        ${d.categoria} - ${d.valor}
+        <button onclick="editarItem('rendaFixa','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
+      </div>`;
+  });
+
+  despFixa.forEach(d=>{
+    let texto = `${d.categoria} - ${d.valor}`;
+
+    if(d.tipo==="parcelado"){
+      texto += ` (${d.parcelasPagas}/${d.parcelasTotal})`;
+      if(d.parcelasPagas < d.parcelasTotal){
+        saldo-=d.valor; saidas+=d.valor;
+      }
+    } else {
+      saldo-=d.valor; saidas+=d.valor;
+    }
+
+    listaDespFixa.innerHTML+=`
+      <div class="transacao">
+        ${texto}
+        ${d.tipo==="parcelado" ? `<button onclick="pagarParcela('${d.id}')">💸</button>` : ""}
+        <button onclick="editarItem('despesasFixas','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
+      </div>`;
+  });
 
   saldoElem.innerText=saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
   entradasElem.innerText=entradas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
   saidasElem.innerText=saidas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  reservaElem.innerText=reserva.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-
-  // Barra meta
-  let p=meta>0?Math.min((saldo/meta)*100,100):0;
-  barraMeta.style.width=p+"%";
-  alertaMeta.innerText=saldo>=meta?"Meta atingida! 🎯":"";
-  alertaMeta.className=saldo>=meta?"alerta":"";
-  metaInfo.innerText=`${meta.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} | Falta: ${(meta-saldo>0?(meta-saldo):0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}`;
-
-  // Previsão
-  let mediaEntradas=0;
-  if(rendaFixa.length>0) mediaEntradas = rendaFixa.reduce((a,b)=>a+b.valor,0)/rendaFixa.length;
-  previsao.innerText="Saldo estimado em 30 dias: "+(saldo+mediaEntradas*30).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});  
 }
 
-// Inicializa real-time
+// AUTH
 onAuthStateChanged(auth,user=>{
   if(!user) window.location.href="login.html";
-  else {
-    carregarColecao("rendaFixa", arr=>rendaFixa=arr);
-    carregarColecao("despesasFixas", arr=>despFixa=arr);
-    carregarColecao("extras", arr=>extras=arr);
-    carregarColecao("despesasMes", arr=>despesas=arr);
+  else{
+    carregar("rendaFixa", v=>rendaFixa=v);
+    carregar("despesasFixas", v=>despFixa=v);
+    carregar("extras", v=>extras=v);
+    carregar("despesasMes", v=>despesas=v);
   }
 });
+
 </script>
+  
 </body>
 </html>
