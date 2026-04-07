@@ -84,6 +84,16 @@ button{
   border-radius:6px;
 }
 
+button:hover{
+  opacity:0.9;
+  transform:scale(1.02);
+  transition:0.2s;
+}
+
+.card{
+  box-shadow:0 4px 10px rgba(0,0,0,0.3);
+}
+
 </style>
 </head>
 
@@ -114,16 +124,6 @@ async function salvarOnline(uid, dado){
   await addDoc(collection(db, "usuarios", uid, "transacoes"), dado);
 }
 
-// 🔥 CARREGAR
-async function carregar(){
-  const querySnapshot = await getDocs(collection(db, "transacoes"));
-  dados = [];
-  querySnapshot.forEach(docItem => {
-    dados.push({ id: docItem.id, ...docItem.data() });
-  });
-  atualizar();
-}
-
 // 🔥 REMOVER ONLINE
 async function removerOnline(uid, id){
   await deleteDoc(doc(db, "usuarios", uid, "transacoes", id));
@@ -140,18 +140,8 @@ async function login(email, senha){
 function logout(){
   signOut(auth);
 }
-
-onAuthStateChanged(auth, user => {
-  if(user){
-    carregarTempoReal(user.uid);
-  } else{
-    dados = [];
-    atualizar();
-  }
-});
   
 window.salvarOnline = salvarOnline;
-window.carregar = carregar;
 window.removerOnline = removerOnline;
   window.login = login;
 window.registrar = registrar;
@@ -163,11 +153,14 @@ window.logout = logout;
 
 <header>💳 Finanças PRO</header>
 
+<p id="userInfo" style="text-align:center; margin-top:10px;"></p>
+  
 <div id="loginBox">
   <input id="email" placeholder="Email">
   <input id="senha" type="password" placeholder="Senha">
   <button onclick="loginUI()">Entrar</button>
   <button onclick="registrarUI()">Registrar</button>
+  <button onclick="logout()">Sair</button>
 </div>
   
 <div class="card grid">
@@ -185,13 +178,32 @@ window.logout = logout;
   </div>
 </div>
 
+<div class="card">
+  <h3>Previsão</h3>
+  <p id="previsao"></p>
+</div>
+  
+<div class="card">
+  <button onclick="graficoCategorias()">Categorias</button>
+  <button onclick="graficoEvolucao()">Evolução</button>
+</div>
+  
 <canvas id="grafico"></canvas>
 
 <div class="card">
   <h3>Meta</h3>
   <input id="metaValor" placeholder="Valor da meta">
   <button onclick="definirMeta()">Salvar Meta</button>
-  <p id="metaInfo"></p>
+<p id="metaInfo"></p>
+
+<div style="background:#334155; border-radius:10px; height:20px; margin-top:10px;">
+  <div id="barraMeta" style="
+    height:100%;
+    width:0%;
+    background:#22c55e;
+    border-radius:10px;
+    transition:0.5s;
+  "></div>
 </div>
 
 <div class="card">
@@ -230,6 +242,7 @@ window.logout = logout;
 </div>
 
 <div class="card">
+  <input type="month" id="filtroMes">
   <h3>Histórico</h3>
   <input type="date" id="filtro">
   <div id="lista"></div>
@@ -275,7 +288,9 @@ async function add(){
 
   let hoje = new Date();
 
-  if(!user) return alert("Faça login primeiro");
+ const user = auth.currentUser;
+
+if(!user) return alert("Faça login primeiro");
 
 await salvarOnline(user.uid, {
     valor,
@@ -284,7 +299,9 @@ await salvarOnline(user.uid, {
     data: hoje.toLocaleDateString(),
     dataISO: hoje.toISOString().split("T")[0]
   });
-
+  
+document.getElementById("valor").value = "";
+document.getElementById("categoria").selectedIndex = 0;  
 }
     
 let chart;
@@ -298,11 +315,12 @@ function graficoCategorias(){
     }
   });
 
-function remover(i){
-  const user = auth.currentUser;
-  removerOnline(user.uid, dados[i].id);
-}
-  
+  // ✅ AGORA sim verifica depois de preencher
+  if(Object.keys(categorias).length === 0){
+    if(chart) chart.destroy();
+    return;
+  }
+
   const ctx = document.getElementById("grafico").getContext("2d");
 
   if(chart) chart.destroy();
@@ -318,16 +336,26 @@ function remover(i){
   });
 }
 
+function remover(i){
+  const user = auth.currentUser;
+  if(!user) return alert("Erro de autenticação");
+
+  removerOnline(user.uid, dados[i].id);
+}
+  
 function atualizar(){
   let saldo=0, entradas=0, saidas=0;
 
-  let filtro = document.getElementById("filtro").value;
+  let filtroDia = document.getElementById("filtro").value;
+let filtroMes = document.getElementById("filtroMes").value;
   const lista = document.getElementById("lista");
   lista.innerHTML="";
 
   dados.forEach((d,i)=>{
 
-    if(filtro && d.dataISO !== filtro) return;
+    if(filtroDia && d.dataISO !== filtroDia) return;
+
+if(filtroMes && !d.dataISO.startsWith(filtroMes)) return;
 
     if(d.tipo==="entrada"){
       saldo += d.valor;
@@ -355,6 +383,7 @@ function atualizar(){
   document.getElementById("entradas").innerText = formatar(entradas);
   document.getElementById("saidas").innerText = formatar(saidas);
   document.getElementById("reserva").innerText = formatar(reserva);
+  document.getElementById("filtroMes").addEventListener("input", atualizar);
 
 if(meta > 0){
   let falta = meta - saldo;
@@ -365,6 +394,33 @@ if(meta > 0){
     " | Falta: " + formatar(falta);
 }
 
+let progresso = 0;
+
+if(meta > 0){
+  progresso = (saldo / meta) * 100;
+  if(progresso > 100) progresso = 100;
+
+  document.getElementById("barraMeta").style.width = progresso + "%";
+}  
+
+let media = 0;
+
+if(dados.length > 0){
+  let total = 0;
+
+  dados.forEach(d=>{
+    if(d.tipo === "entrada") total += d.valor;
+    else total -= d.valor;
+  });
+
+  media = total / dados.length;
+}
+
+let previsao = saldo + (media * 30);
+
+document.getElementById("previsao").innerText =
+  "Saldo estimado em 30 dias: " + formatar(previsao);  
+  
 graficoCategorias();
 }
 
@@ -409,7 +465,22 @@ function carregarTempoReal(uid){
   
 document.getElementById("filtro").addEventListener("input", atualizar);
 
-carregar();
+onAuthStateChanged(auth, user => {
+  if(user){
+    document.getElementById("userInfo").innerText = "Logado: " + user.email;
+
+    document.getElementById("loginBox").style.display = "none"; // 🔥 esconder login
+
+    carregarTempoReal(user.uid);
+  } else{
+    document.getElementById("userInfo").innerText = "";
+
+    document.getElementById("loginBox").style.display = "block"; // 🔥 mostrar login
+
+    dados = [];
+    atualizar();
+  }
+});
 
 window.add = add;
 window.remover = remover;
