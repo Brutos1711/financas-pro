@@ -283,14 +283,17 @@ function atualizar(){
 }
 
 // AUTH
+let carregado = false;
+
 onAuthStateChanged(auth, user => {
-  if (user === null) {
-    console.log("Não logado → redirecionando");
+  if(!user){
     window.location.href = "login.html";
     return;
   }
 
-  console.log("Usuário logado:", user.uid);
+  if(carregado) return; // 🔥 impede duplicação
+
+  carregado = true;
 
   carregar("rendaFixa", v=>rendaFixa=v);
   carregar("despesasFixas", v=>despFixa=v);
