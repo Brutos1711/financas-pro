@@ -6,46 +6,15 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 :root{
-  --bg:#0f172a;
-  --card:#1e293b;
-  --accent:#22c55e;
-  --danger:#ef4444;
-  --text:#e2e8f0;
-  --warning:#facc15;
+  --bg:#0f172a; --card:#1e293b; --accent:#22c55e; --danger:#ef4444; --text:#e2e8f0; --warning:#facc15;
 }
-body{
-  font-family: Arial, sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  margin:0;
-  padding:15px;
-}
-header{
-  background:linear-gradient(135deg,#22c55e,#15803d);
-  padding:15px;
-  border-radius:12px;
-  text-align:center;
-  font-weight:bold;
-  font-size:22px;
-}
-.card{
-  background:var(--card);
-  padding:15px;
-  border-radius:12px;
-  margin-top:15px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.3);
-}
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-  gap:15px;
-}
+body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;}
+header{background:linear-gradient(135deg,#22c55e,#15803d);padding:15px;border-radius:12px;text-align:center;font-weight:bold;font-size:22px;}
+.card{background:var(--card);padding:15px;border-radius:12px;margin-top:15px;box-shadow:0 4px 10px rgba(0,0,0,0.3);}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;}
 .stat{text-align:center;}
 input,select{width:100%;padding:8px;border:none;border-radius:8px;margin:5px 0;}
-button{
-  width:100%;padding:10px;border:none;border-radius:8px;
-  background:var(--accent);color:white;cursor:pointer;
-}
+button{width:100%;padding:10px;border:none;border-radius:8px;background:var(--accent);color:white;cursor:pointer;}
 button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
 .transacao{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #334155;}
 .entrada{color:#22c55e}.saida{color:#ef4444}
@@ -56,7 +25,6 @@ button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
 @media(max-width:600px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
-
 <body>
 <header>💳 Finanças PRO+</header>
 
@@ -77,8 +45,7 @@ button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
 <div class="card grid">
   <div><input id="metaValor" placeholder="Valor da meta"><button onclick="definirMeta()">Salvar Meta</button></div>
   <div><input id="reservaPct" placeholder="Reserva Automática (%)"></div>
-  <div><input id="valor" placeholder="Valor">
-      <select id="tipo"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div>
+  <div><input id="valor" placeholder="Valor"><select id="tipo"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div>
   <div><select id="categoria">
       <optgroup label="Renda"><option>Salário</option><option>Extra</option></optgroup>
       <optgroup label="Despesas"><option>Mercado</option><option>Internet</option><option>Lazer</option></optgroup>
@@ -91,9 +58,7 @@ button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
   <div><input type="date" id="filtro"></div>
 </div>
 
-<div class="card">
-  <div id="lista"></div>
-</div>
+<div class="card"><div id="lista"></div></div>
 
 <div class="card grid">
   <div><canvas id="graficoCategorias"></canvas></div>
@@ -101,9 +66,9 @@ button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
 </div>
 
 <div class="card">
-  <h3>Previsão de saldo futuro (30 dias)</h3>
-  <p id="previsao"></p>
-  <button onclick="logout()">Sair</button>
+<h3>Previsão de saldo futuro (30 dias)</h3>
+<p id="previsao"></p>
+<button onclick="logout()">Sair</button>
 </div>
 
 <script type="module">
@@ -111,7 +76,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/fireba
 import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-// Config Firebase
+// 🔑 Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDC9bzY8IsavRdL9N4L8B0IQgOSQ-qgE_Y",
   authDomain: "financasbarreto-30f9d.firebaseapp.com",
@@ -126,33 +91,32 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Elementos
-const lista = document.getElementById("lista");
-const saldoElem = document.getElementById("saldo");
-const entradasElem = document.getElementById("entradas");
-const saidasElem = document.getElementById("saidas");
-const reservaElem = document.getElementById("reserva");
-const valorInput = document.getElementById("valor");
-const filtro = document.getElementById("filtro");
-const filtroMes = document.getElementById("filtroMes");
-const barraMeta = document.getElementById("barraMeta");
-const alertaMeta = document.getElementById("alertaMeta");
-const metaInfo = document.getElementById("metaInfo");
-const previsao = document.getElementById("previsao");
+const lista=document.getElementById("lista");
+const saldoElem=document.getElementById("saldo");
+const entradasElem=document.getElementById("entradas");
+const saidasElem=document.getElementById("saidas");
+const reservaElem=document.getElementById("reserva");
+const valorInput=document.getElementById("valor");
+const filtro=document.getElementById("filtro");
+const filtroMes=document.getElementById("filtroMes");
+const barraMeta=document.getElementById("barraMeta");
+const alertaMeta=document.getElementById("alertaMeta");
+const metaInfo=document.getElementById("metaInfo");
+const previsao=document.getElementById("previsao");
 
-let dados = [];
-let meta = Number(localStorage.getItem("meta"))||0;
-let reserva = Number(localStorage.getItem("reserva"))||0;
-const formatar = v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+let dados=[]; 
+let meta=Number(localStorage.getItem("meta"))||0;
+let reserva=Number(localStorage.getItem("reserva"))||0;
+const formatar=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
-// Firebase funções
+// 🔹 Firebase funções
 async function salvarOnline(uid,dado){await addDoc(collection(db,"usuarios",uid,"transacoes"),dado);}
 async function removerOnline(uid,id){await deleteDoc(doc(db,"usuarios",uid,"transacoes",id));}
 
-// Logout
+// 🔹 Logout
 function logout(){ signOut(auth).then(()=>window.location.href="login.html"); }
 
-// Adicionar transação
+// 🔹 Adicionar transação
 async function add(){
   let valor = parseFloat(valorInput.value);
   let tipo = document.getElementById("tipo").value;
@@ -175,12 +139,12 @@ async function add(){
   document.getElementById("tipo").selectedIndex=0;
 }
 
-// Remover transação
+// 🔹 Remover transação
 function remover(i){ const user=auth.currentUser; if(!user)return alert("Erro de autenticação"); removerOnline(user.uid,dados[i].id); }
 
 let chartCategorias, chartEvolucao;
 
-// Atualizar tela
+// 🔹 Atualizar tela
 function atualizar(){
   let saldo=0, entradas=0, saidas=0;
   let filtroDia=filtro.value, filtroMesV=filtroMes.value;
@@ -214,20 +178,20 @@ function atualizar(){
   // Gráficos
   let cat={};dados.forEach(d=>{if(d.tipo==="saida")cat[d.categoria]=(cat[d.categoria]||0)+d.valor;});
   if(chartCategorias) chartCategorias.destroy();
-  chartCategorias = new Chart(graficoCategorias.getContext("2d"),{
+  chartCategorias = new Chart(document.getElementById("graficoCategorias").getContext("2d"),{
     type:"pie",
     data:{labels:Object.keys(cat),datasets:[{data:Object.values(cat),backgroundColor:['#22c55e','#ef4444','#facc15','#3b82f6','#8b5cf6']}]}
   });
 
   let evo={};dados.forEach(d=>{let m=d.dataISO.slice(0,7);evo[m]=evo[m]||0;evo[m]+=d.tipo==="entrada"?d.valor:-d.valor;});
   if(chartEvolucao) chartEvolucao.destroy();
-  chartEvolucao = new Chart(graficoEvolucao.getContext("2d"),{
+  chartEvolucao = new Chart(document.getElementById("graficoEvolucao").getContext("2d"),{
     type:"line",
     data:{labels:Object.keys(evo),datasets:[{label:"Saldo",data:Object.values(evo),borderColor:'#22c55e',fill:false}]}
   });
 }
 
-// Carregar transações em tempo real
+// 🔹 Carregar transações em tempo real
 function carregarTempoReal(uid){
   const ref = collection(db,"usuarios",uid,"transacoes");
   onSnapshot(ref,snapshot=>{
@@ -237,11 +201,11 @@ function carregarTempoReal(uid){
   });
 }
 
-// Filtros
+// 🔹 Filtros
 filtro.addEventListener("input",atualizar);
 filtroMes.addEventListener("input",atualizar);
 
-// Verificação de login
+// 🔹 Verificação de login
 onAuthStateChanged(auth,user=>{
   if(!user){
     window.location.href="login.html";
@@ -250,7 +214,7 @@ onAuthStateChanged(auth,user=>{
   }
 });
 
-// Expor funções
+// 🔹 Expor funções
 window.add=add;
 window.remover=remover;
 window.definirMeta=()=>{ meta=Number(document.getElementById("metaValor").value)||0; localStorage.setItem("meta",meta); atualizar(); };
