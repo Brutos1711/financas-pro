@@ -57,6 +57,63 @@ button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
 </style>
 </head>
 
+<body>
+<header>💳 Finanças PRO+</header>
+<p id="userInfo" style="text-align:center;margin-top:10px;"></p>
+
+<div id="loginBox">
+  <input id="email" placeholder="Email">
+  <input id="senha" type="password" placeholder="Senha">
+  <button onclick="loginUI()">Entrar</button>
+  <button onclick="registrarUI()">Registrar</button>
+  <button onclick="logout()">Sair</button>
+</div>
+
+<div class="card grid">
+  <div class="stat"><small>Saldo</small><h3 id="saldo">R$0</h3></div>
+  <div class="stat"><small>Entradas</small><h3 id="entradas">R$0</h3></div>
+  <div class="stat"><small>Saídas</small><h3 id="saidas">R$0</h3></div>
+  <div class="stat"><small>Reserva</small><h3 id="reserva">R$0</h3></div>
+  <div class="stat"><small>Meta</small><h3 id="metaInfo">R$0</h3></div>
+</div>
+
+<div class="card">
+  <h3>Barra da Meta</h3>
+  <div class="barra-meta"><div id="barraMeta" class="barra-preenchida"></div></div>
+  <p id="alertaMeta"></p>
+</div>
+
+<div class="card grid">
+  <div><input id="metaValor" placeholder="Valor da meta"><button onclick="definirMeta()">Salvar Meta</button></div>
+  <div><input id="reservaPct" placeholder="Reserva Automática (%)"></div>
+  <div><input id="valor" placeholder="Valor">
+      <select id="tipo"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div>
+  <div><select id="categoria">
+      <optgroup label="Renda"><option>Salário</option><option>Extra</option></optgroup>
+      <optgroup label="Despesas"><option>Mercado</option><option>Internet</option><option>Lazer</option></optgroup>
+  </select></div>
+  <div><button onclick="add()">Adicionar Transação</button></div>
+</div>
+
+<div class="card grid">
+  <div><input type="month" id="filtroMes"></div>
+  <div><input type="date" id="filtro"></div>
+</div>
+
+<div class="card">
+  <div id="lista"></div>
+</div>
+
+<div class="card grid">
+  <div><canvas id="graficoCategorias"></canvas></div>
+  <div><canvas id="graficoEvolucao"></canvas></div>
+</div>
+
+<div class="card">
+  <h3>Previsão de saldo futuro (30 dias)</h3>
+  <p id="previsao"></p>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
@@ -75,7 +132,27 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Firebase
+// Elementos
+const lista = document.getElementById("lista");
+const saldoElem = document.getElementById("saldo");
+const entradasElem = document.getElementById("entradas");
+const saidasElem = document.getElementById("saidas");
+const reservaElem = document.getElementById("reserva");
+const valorInput = document.getElementById("valor");
+const filtro = document.getElementById("filtro");
+const filtroMes = document.getElementById("filtroMes");
+const barraMeta = document.getElementById("barraMeta");
+const alertaMeta = document.getElementById("alertaMeta");
+const metaInfo = document.getElementById("metaInfo");
+const previsao = document.getElementById("previsao");
+const userInfo = document.getElementById("userInfo");
+const loginBox = document.getElementById("loginBox");
+
+let dados = [];
+let meta = Number(localStorage.getItem("meta"))||0;
+let reserva = Number(localStorage.getItem("reserva"))||0;
+const formatar = v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+
 async function salvarOnline(uid,dado){await addDoc(collection(db,"usuarios",uid,"transacoes"),dado);}
 async function removerOnline(uid,id){await deleteDoc(doc(db,"usuarios",uid,"transacoes",id));}
 async function registrar(email,senha){await createUserWithEmailAndPassword(auth,email,senha);}
@@ -84,127 +161,106 @@ function logout(){signOut(auth);}
 
 window.salvarOnline=salvarOnline; window.removerOnline=removerOnline;
 window.registrar=registrar; window.login=login; window.logout=logout;
-</script>
 
-<body>
-<header>💳 Finanças PRO+</header>
-<p id="userInfo" style="text-align:center;margin-top:10px;"></p>
-
-<div id="loginBox">
-<input id="email" placeholder="Email">
-<input id="senha" type="password" placeholder="Senha">
-<button onclick="loginUI()">Entrar</button>
-<button onclick="registrarUI()">Registrar</button>
-<button onclick="logout()">Sair</button>
-</div>
-
-<div class="card grid">
-<div class="stat"><small>Saldo</small><h3 id="saldo">R$0</h3></div>
-<div class="stat"><small>Entradas</small><h3 id="entradas">R$0</h3></div>
-<div class="stat"><small>Saídas</small><h3 id="saidas">R$0</h3></div>
-<div class="stat"><small>Reserva</small><h3 id="reserva">R$0</h3></div>
-<div class="stat"><small>Meta</small><h3 id="metaInfo">R$0</h3></div>
-</div>
-
-<div class="card">
-<h3>Barra da Meta</h3>
-<div class="barra-meta"><div id="barraMeta" class="barra-preenchida"></div></div>
-<p id="alertaMeta"></p>
-</div>
-
-<div class="card grid">
-<div><input id="metaValor" placeholder="Valor da meta"><button onclick="definirMeta()">Salvar Meta</button></div>
-<div><input id="reservaPct" placeholder="Reserva Automática (%)"></div>
-<div><input id="valor" placeholder="Valor"><select id="tipo"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div>
-<div><select id="categoria"><optgroup label="Renda"><option>Salário</option><option>Extra</option></optgroup><optgroup label="Despesas"><option>Mercado</option><option>Internet</option><option>Lazer</option></optgroup></select></div>
-<div><button onclick="add()">Adicionar Transação</button></div>
-</div>
-
-<div class="card grid">
-<div><input type="month" id="filtroMes"></div>
-<div><input type="date" id="filtro"></div>
-</div>
-
-<div class="card grid">
-<div><canvas id="graficoCategorias"></canvas></div>
-<div><canvas id="graficoEvolucao"></canvas></div>
-</div>
-
-<div class="card">
-<h3>Previsão de saldo futuro (30 dias)</h3>
-<p id="previsao"></p>
-</div>
-
-<script>
-let dados=[]; let meta=Number(localStorage.getItem("meta"))||0;
-let reserva=Number(localStorage.getItem("reserva"))||0;
-const formatar=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-
+// Funções UI
 function loginUI(){login(email.value,senha.value);}
 function registrarUI(){registrar(email.value,senha.value);}
-function definirMeta(){meta=Number(metaValor.value);localStorage.setItem("meta",meta);atualizar();}
+function definirMeta(){meta=Number(metaValor.value)||0;localStorage.setItem("meta",meta);atualizar();}
 
+// Adicionar transação
 async function add(){
-let valor=parseFloat(document.getElementById("valor").value);
-let tipo=document.getElementById("tipo").value;
-let categoria=document.getElementById("categoria").value;
-let reservaPct=Number(reservaPct.value)||0;
-if(!valor)return alert("Digite valor");
-if(tipo==="entrada"){let g=valor*(reservaPct/100);reserva+=g;valor-=g;localStorage.setItem("reserva",reserva);}
-const user=auth.currentUser;if(!user)return alert("Faça login primeiro");
-let hoje=new Date();
-await salvarOnline(user.uid,{valor,tipo,categoria,data:hoje.toLocaleDateString(),dataISO:hoje.toISOString().split("T")[0]});
-valorInput.value="";categoria.selectedIndex=0;
+  let valor = parseFloat(valorInput.value);
+  let tipo = document.getElementById("tipo").value;
+  let categoria = document.getElementById("categoria").value;
+  let reservaPct = Number(document.getElementById("reservaPct").value)||0;
+
+  if(!valor) return alert("Digite valor");
+  if(tipo==="entrada"){let g=valor*(reservaPct/100);reserva+=g;valor-=g;localStorage.setItem("reserva",reserva);}
+  const user=auth.currentUser; if(!user) return alert("Faça login primeiro");
+  let hoje = new Date();
+  await salvarOnline(user.uid,{valor,tipo,categoria,data:hoje.toLocaleDateString(),dataISO:hoje.toISOString().split("T")[0]});
+  valorInput.value=""; document.getElementById("categoria").selectedIndex=0; document.getElementById("tipo").selectedIndex=0;
 }
 
+// Remover transação
 function remover(i){const user=auth.currentUser;if(!user)return alert("Erro de autenticação");removerOnline(user.uid,dados[i].id);}
 
-let chartCategorias,chartEvolucao;
+let chartCategorias, chartEvolucao;
+
+// Atualizar tela
 function atualizar(){
-let saldo=0,entradas=0,saidas=0;
-let filtroDia=filtro.value,filtroMesV=filtroMes.value;
-lista.innerHTML="";
+  let saldo=0,entradas=0,saidas=0;
+  let filtroDia=filtro.value, filtroMesV=filtroMes.value;
+  lista.innerHTML="";
 
-let total=0;
-dados.forEach((d,i)=>{
-if(filtroDia&&d.dataISO!==filtroDia)return;
-if(filtroMesV&&!d.dataISO.startsWith(filtroMesV))return;
-if(d.tipo==="entrada"){saldo+=d.valor;entradas+=d.valor;}else{saldo-=d.valor;saidas+=d.valor;}
-lista.innerHTML+=`<div class="transacao"><div><strong>${formatar(d.valor)}</strong><br><small>${d.categoria} • ${d.data}</small></div><div><span class="${d.tipo}">${d.tipo}</span><button class="delete" onclick="remover(${i})">X</button></div></div>`;
-total+=d.tipo==="entrada"?d.valor:-d.valor;
-});
-saldoElem.innerText=formatar(saldo);entradasElem.innerText=formatar(entradas);saidasElem.innerText=formatar(saidas);reservaElem.innerText=formatar(reserva);
+  let total=0;
+  dados.forEach((d,i)=>{
+    if(filtroDia && d.dataISO!==filtroDia) return;
+    if(filtroMesV && !d.dataISO.startsWith(filtroMesV)) return;
+    if(d.tipo==="entrada"){saldo+=d.valor;entradas+=d.valor;} else {saldo-=d.valor;saidas+=d.valor;}
+    lista.innerHTML+=`<div class="transacao"><div><strong>${formatar(d.valor)}</strong><br><small>${d.categoria} • ${d.data}</small></div><div><span class="${d.tipo}">${d.tipo}</span><button class="delete" onclick="remover(${i})">X</button></div></div>`;
+    total += d.tipo==="entrada"?d.valor:-d.valor;
+  });
 
-// Barra meta
-let p=meta>0?Math.min((saldo/meta)*100,100):0;
-barraMeta.style.width=p+"%";
-alertaMeta.innerText=saldo>=meta?"Meta atingida! 🎯":"";
-alertaMeta.className=saldo>=meta?"alerta":"";
-metaInfo.innerText=`${formatar(meta)} | Falta: ${formatar(Math.max(meta-saldo,0))}`;
+  saldoElem.innerText=formatar(saldo);
+  entradasElem.innerText=formatar(entradas);
+  saidasElem.innerText=formatar(saidas);
+  reservaElem.innerText=formatar(reserva);
 
-// Previsão
-let media=dados.length>0?total/dados.length:0;
-previsao.innerText="Saldo estimado em 30 dias: "+formatar(saldo+media*30);
+  // Barra meta
+  let p=meta>0?Math.min((saldo/meta)*100,100):0;
+  barraMeta.style.width=p+"%";
+  alertaMeta.innerText=saldo>=meta?"Meta atingida! 🎯":"";
+  alertaMeta.className=saldo>=meta?"alerta":"";
+  metaInfo.innerText=`${formatar(meta)} | Falta: ${formatar(Math.max(meta-saldo,0))}`;
 
-// Gráficos
-let cat={};dados.forEach(d=>{if(d.tipo==="saida")cat[d.categoria]=(cat[d.categoria]||0)+d.valor;});
-if(chartCategorias)chartCategorias.destroy();
-chartCategorias=new Chart(graficoCategorias.getContext("2d"),{type:"pie",data:{labels:Object.keys(cat),datasets:[{data:Object.values(cat),backgroundColor:['#22c55e','#ef4444','#facc15','#3b82f6','#8b5cf6']}]}});
+  // Previsão
+  let media=dados.length>0?total/dados.length:0;
+  previsao.innerText="Saldo estimado em 30 dias: "+formatar(saldo+media*30);
 
-let evo={};dados.forEach(d=>{let m=d.dataISO.slice(0,7);evo[m]=evo[m]||0;evo[m]+=d.tipo==="entrada"?d.valor:-d.valor;});
-if(chartEvolucao)chartEvolucao.destroy();
-chartEvolucao=new Chart(graficoEvolucao.getContext("2d"),{type:"line",data:{labels:Object.keys(evo),datasets:[{label:"Saldo",data:Object.values(evo),borderColor:'#22c55e',fill:false}]}});
+  // Gráficos
+  let cat={};dados.forEach(d=>{if(d.tipo==="saida")cat[d.categoria]=(cat[d.categoria]||0)+d.valor;});
+  if(chartCategorias) chartCategorias.destroy();
+  chartCategorias = new Chart(graficoCategorias.getContext("2d"),{
+    type:"pie",
+    data:{labels:Object.keys(cat),datasets:[{data:Object.values(cat),backgroundColor:['#22c55e','#ef4444','#facc15','#3b82f6','#8b5cf6']}]}
+  });
+
+  let evo={};dados.forEach(d=>{let m=d.dataISO.slice(0,7);evo[m]=evo[m]||0;evo[m]+=d.tipo==="entrada"?d.valor:-d.valor;});
+  if(chartEvolucao) chartEvolucao.destroy();
+  chartEvolucao=new Chart(graficoEvolucao.getContext("2d"),{
+    type:"line",
+    data:{labels:Object.keys(evo),datasets:[{label:"Saldo",data:Object.values(evo),borderColor:'#22c55e',fill:false}]}
+  });
 }
 
-// Carregar realtime
+// Realtime Firebase
 function carregarTempoReal(uid){
-const ref=collection(db,"usuarios",uid,"transacoes");
-onSnapshot(ref,snapshot=>{dados=[];snapshot.forEach(d=>dados.push({id:d.id,...d.data()}));atualizar();});
+  const ref=collection(db,"usuarios",uid,"transacoes");
+  onSnapshot(ref,snapshot=>{dados=[];snapshot.forEach(d=>dados.push({id:d.id,...d.data()}));atualizar();});
 }
 
-filtro.addEventListener("input",atualizar); filtroMes.addEventListener("input",atualizar);
-onAuthStateChanged(auth,user=>{if(user){userInfo.innerText="Logado: "+user.email;loginBox.style.display="none";carregarTempoReal(user.uid);}else{userInfo.innerText="";loginBox.style.display="block";dados=[];atualizar();}});
-window.add=add; window.remover=remover; window.definirMeta=definirMeta;
+// Filtros
+filtro.addEventListener("input",atualizar);
+filtroMes.addEventListener("input",atualizar);
+
+// Auth State
+onAuthStateChanged(auth,user=>{
+  if(user){
+    userInfo.innerText="Logado: "+user.email;
+    loginBox.style.display="none";
+    carregarTempoReal(user.uid);
+  } else {
+    userInfo.innerText="";
+    loginBox.style.display="block";
+    dados=[];
+    atualizar();
+  }
+});
+
+window.add=add;
+window.remover=remover;
+window.definirMeta=definirMeta;
 </script>
 </body>
 </html>
