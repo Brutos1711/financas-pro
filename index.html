@@ -2,10 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Finanças PRO</title>
-
+<title>Finanças PRO+</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
 :root{
   --bg:#0f172a;
@@ -13,480 +11,200 @@
   --accent:#22c55e;
   --danger:#ef4444;
   --text:#e2e8f0;
+  --warning:#facc15;
 }
-
 body{
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   background:var(--bg);
   color:var(--text);
   margin:0;
   padding:15px;
 }
-
 header{
   background:linear-gradient(135deg,#22c55e,#15803d);
   padding:15px;
   border-radius:12px;
   text-align:center;
   font-weight:bold;
-  font-size:18px;
+  font-size:22px;
 }
-
 .card{
   background:var(--card);
   padding:15px;
   border-radius:12px;
   margin-top:15px;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:10px;
-}
-
-.stat{
-  text-align:center;
-}
-
-input,select{
-  width:100%;
-  padding:8px;
-  border:none;
-  border-radius:8px;
-  margin:5px 0;
-}
-
-button{
-  width:100%;
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  background:var(--accent);
-  color:white;
-  cursor:pointer;
-}
-
-.transacao{
-  display:flex;
-  justify-content:space-between;
-  padding:10px;
-  border-bottom:1px solid #334155;
-}
-
-.entrada{color:#22c55e}
-.saida{color:#ef4444}
-
-.delete{
-  background:var(--danger);
-  padding:4px 8px;
-  font-size:12px;
-  border-radius:6px;
-}
-
-button:hover{
-  opacity:0.9;
-  transform:scale(1.02);
-  transition:0.2s;
-}
-
-.card{
   box-shadow:0 4px 10px rgba(0,0,0,0.3);
 }
-
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:15px;
+}
+.stat{text-align:center;}
+input,select{width:100%;padding:8px;border:none;border-radius:8px;margin:5px 0;}
+button{
+  width:100%;padding:10px;border:none;border-radius:8px;
+  background:var(--accent);color:white;cursor:pointer;
+}
+button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
+.transacao{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #334155;}
+.entrada{color:#22c55e}.saida{color:#ef4444}
+.delete{background:var(--danger);padding:4px 8px;font-size:12px;border-radius:6px;}
+.barra-meta{background:#334155;border-radius:10px;height:20px;margin-top:10px;}
+.barra-preenchida{height:100%;width:0%;background:var(--accent);border-radius:10px;transition:0.5s;}
+.alerta{color:var(--warning);font-weight:bold;}
+@media(max-width:600px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
 
 <script type="module">
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } 
-from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import { onSnapshot } 
-from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } 
-from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDC9bzY8IsavRdL9N4L8B0IQgOSQ-qgE_Y",
-  authDomain: "financasbarreto-30f9d.firebaseapp.com",
-  projectId: "financasbarreto-30f9d",
-  storageBucket: "financasbarreto-30f9d.firebasestorage.app",
-  messagingSenderId: "673333294399",
-  appId: "1:673333294399:web:86fc5b776191e42d648f8a"
+  apiKey: "COLOQUE_SUA_APIKEY_AQUI",
+  authDomain: "SEU_PROJETO.firebaseapp.com",
+  projectId: "SEU_PROJETO",
+  storageBucket: "SEU_PROJETO.appspot.com",
+  messagingSenderId: "SEU_MESSAGING_ID",
+  appId: "SEU_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-// 🔥 SALVAR ONLINE
-async function salvarOnline(uid, dado){
-  await addDoc(collection(db, "usuarios", uid, "transacoes"), dado);
-}
+// Firebase
+async function salvarOnline(uid,dado){await addDoc(collection(db,"usuarios",uid,"transacoes"),dado);}
+async function removerOnline(uid,id){await deleteDoc(doc(db,"usuarios",uid,"transacoes",id));}
+async function registrar(email,senha){await createUserWithEmailAndPassword(auth,email,senha);}
+async function login(email,senha){await signInWithEmailAndPassword(auth,email,senha);}
+function logout(){signOut(auth);}
 
-// 🔥 REMOVER ONLINE
-async function removerOnline(uid, id){
-  await deleteDoc(doc(db, "usuarios", uid, "transacoes", id));
-}
-
-async function registrar(email, senha){
-  await createUserWithEmailAndPassword(auth, email, senha);
-}
-
-async function login(email, senha){
-  await signInWithEmailAndPassword(auth, email, senha);
-}
-
-function logout(){
-  signOut(auth);
-}
-  
-window.salvarOnline = salvarOnline;
-window.removerOnline = removerOnline;
-  window.login = login;
-window.registrar = registrar;
-window.logout = logout;
-  
+window.salvarOnline=salvarOnline; window.removerOnline=removerOnline;
+window.registrar=registrar; window.login=login; window.logout=logout;
 </script>
-  
+
 <body>
+<header>💳 Finanças PRO+</header>
+<p id="userInfo" style="text-align:center;margin-top:10px;"></p>
 
-<header>💳 Finanças PRO</header>
-
-<p id="userInfo" style="text-align:center; margin-top:10px;"></p>
-  
 <div id="loginBox">
-  <input id="email" placeholder="Email">
-  <input id="senha" type="password" placeholder="Senha">
-  <button onclick="loginUI()">Entrar</button>
-  <button onclick="registrarUI()">Registrar</button>
-  <button onclick="logout()">Sair</button>
+<input id="email" placeholder="Email">
+<input id="senha" type="password" placeholder="Senha">
+<button onclick="loginUI()">Entrar</button>
+<button onclick="registrarUI()">Registrar</button>
+<button onclick="logout()">Sair</button>
 </div>
-  
+
 <div class="card grid">
-  <div class="stat">
-    <small>Saldo</small>
-    <h3 id="saldo">R$0</h3>
-  </div>
-  <div class="stat">
-    <small>Entradas</small>
-    <h3 id="entradas">R$0</h3>
-  </div>
-  <div class="stat">
-    <small>Saídas</small>
-    <h3 id="saidas">R$0</h3>
-  </div>
+<div class="stat"><small>Saldo</small><h3 id="saldo">R$0</h3></div>
+<div class="stat"><small>Entradas</small><h3 id="entradas">R$0</h3></div>
+<div class="stat"><small>Saídas</small><h3 id="saidas">R$0</h3></div>
+<div class="stat"><small>Reserva</small><h3 id="reserva">R$0</h3></div>
+<div class="stat"><small>Meta</small><h3 id="metaInfo">R$0</h3></div>
 </div>
 
 <div class="card">
-  <h3>Previsão</h3>
-  <p id="previsao"></p>
+<h3>Barra da Meta</h3>
+<div class="barra-meta"><div id="barraMeta" class="barra-preenchida"></div></div>
+<p id="alertaMeta"></p>
 </div>
-  
-<div class="card">
-  <button onclick="graficoCategorias()">Categorias</button>
-  <button onclick="graficoEvolucao()">Evolução</button>
+
+<div class="card grid">
+<div><input id="metaValor" placeholder="Valor da meta"><button onclick="definirMeta()">Salvar Meta</button></div>
+<div><input id="reservaPct" placeholder="Reserva Automática (%)"></div>
+<div><input id="valor" placeholder="Valor"><select id="tipo"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div>
+<div><select id="categoria"><optgroup label="Renda"><option>Salário</option><option>Extra</option></optgroup><optgroup label="Despesas"><option>Mercado</option><option>Internet</option><option>Lazer</option></optgroup></select></div>
+<div><button onclick="add()">Adicionar Transação</button></div>
 </div>
-  
-<canvas id="grafico"></canvas>
 
-<div class="card">
-  <h3>Meta</h3>
-  <input id="metaValor" placeholder="Valor da meta">
-  <button onclick="definirMeta()">Salvar Meta</button>
-<p id="metaInfo"></p>
+<div class="card grid">
+<div><input type="month" id="filtroMes"></div>
+<div><input type="date" id="filtro"></div>
+</div>
 
-<div style="background:#334155; border-radius:10px; height:20px; margin-top:10px;">
-  <div id="barraMeta" style="
-    height:100%;
-    width:0%;
-    background:#22c55e;
-    border-radius:10px;
-    transition:0.5s;
-  "></div>
+<div class="card grid">
+<div><canvas id="graficoCategorias"></canvas></div>
+<div><canvas id="graficoEvolucao"></canvas></div>
 </div>
 
 <div class="card">
-  <h3>Reserva Automática (%)</h3>
-  <input id="reservaPct" placeholder="Ex: 10">
-</div>
-
-<div class="card">
-  <h3>Reserva</h3>
-  <h2 id="reserva">R$0</h2>
-</div>
-
-<div class="card">
-  <h3>Nova Transação</h3>
-  <input id="valor" placeholder="Valor">
-  
-  <select id="tipo">
-    <option value="entrada">Entrada</option>
-    <option value="saida">Saída</option>
-  </select>
-
-<select id="categoria">
-  <optgroup label="Renda">
-    <option>Salário</option>
-    <option>Extra</option>
-  </optgroup>
-
-  <optgroup label="Despesas">
-    <option>Mercado</option>
-    <option>Internet</option>
-    <option>Lazer</option>
-  </optgroup>
-</select>
-
-  <button onclick="add()">Adicionar</button>
-</div>
-
-<div class="card">
-  <input type="month" id="filtroMes">
-  <h3>Histórico</h3>
-  <input type="date" id="filtro">
-  <div id="lista"></div>
+<h3>Previsão de saldo futuro (30 dias)</h3>
+<p id="previsao"></p>
 </div>
 
 <script>
+let dados=[]; let meta=Number(localStorage.getItem("meta"))||0;
+let reserva=Number(localStorage.getItem("reserva"))||0;
+const formatar=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
-let dados = [];
-let meta = Number(localStorage.getItem("meta")) || 0;
-let reserva = Number(localStorage.getItem("reserva")) || 0;
-
-const formatar = v =>
-  v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-
-function loginUI(){
-  login(email.value, senha.value);
-}
-
-function registrarUI(){
-  registrar(email.value, senha.value);
-}
-  
-function definirMeta(){
-  meta = Number(document.getElementById("metaValor").value);
-  localStorage.setItem("meta", meta);
-  atualizar();
-}
+function loginUI(){login(email.value,senha.value);}
+function registrarUI(){registrar(email.value,senha.value);}
+function definirMeta(){meta=Number(metaValor.value);localStorage.setItem("meta",meta);atualizar();}
 
 async function add(){
-  let valor = parseFloat(document.getElementById("valor").value);
-  let tipo = document.getElementById("tipo").value;
-  let categoria = document.getElementById("categoria").value;
-  let reservaPct = Number(document.getElementById("reservaPct").value) || 0;
-
-  if(!valor) return alert("Digite valor");
-
-  if(tipo === "entrada"){
-    let guardar = valor * (reservaPct / 100);
-    reserva += guardar;
-    valor -= guardar;
-    localStorage.setItem("reserva", reserva);
-  }
-
-  let hoje = new Date();
-
- const user = auth.currentUser;
-
-if(!user) return alert("Faça login primeiro");
-
-await salvarOnline(user.uid, {
-    valor,
-    tipo,
-    categoria,
-    data: hoje.toLocaleDateString(),
-    dataISO: hoje.toISOString().split("T")[0]
-  });
-  
-document.getElementById("valor").value = "";
-document.getElementById("categoria").selectedIndex = 0;  
-}
-    
-let chart;
-
-function graficoCategorias(){
-  let categorias = {};
-
-  dados.forEach(d=>{
-    if(d.tipo === "saida"){
-      categorias[d.categoria] = (categorias[d.categoria] || 0) + d.valor;
-    }
-  });
-
-  // ✅ AGORA sim verifica depois de preencher
-  if(Object.keys(categorias).length === 0){
-    if(chart) chart.destroy();
-    return;
-  }
-
-  const ctx = document.getElementById("grafico").getContext("2d");
-
-  if(chart) chart.destroy();
-
-  chart = new Chart(ctx,{
-    type:"pie",
-    data:{
-      labels:Object.keys(categorias),
-      datasets:[{
-        data:Object.values(categorias)
-      }]
-    }
-  });
+let valor=parseFloat(document.getElementById("valor").value);
+let tipo=document.getElementById("tipo").value;
+let categoria=document.getElementById("categoria").value;
+let reservaPct=Number(reservaPct.value)||0;
+if(!valor)return alert("Digite valor");
+if(tipo==="entrada"){let g=valor*(reservaPct/100);reserva+=g;valor-=g;localStorage.setItem("reserva",reserva);}
+const user=auth.currentUser;if(!user)return alert("Faça login primeiro");
+let hoje=new Date();
+await salvarOnline(user.uid,{valor,tipo,categoria,data:hoje.toLocaleDateString(),dataISO:hoje.toISOString().split("T")[0]});
+valorInput.value="";categoria.selectedIndex=0;
 }
 
-function remover(i){
-  const user = auth.currentUser;
-  if(!user) return alert("Erro de autenticação");
+function remover(i){const user=auth.currentUser;if(!user)return alert("Erro de autenticação");removerOnline(user.uid,dados[i].id);}
 
-  removerOnline(user.uid, dados[i].id);
-}
-  
+let chartCategorias,chartEvolucao;
 function atualizar(){
-  let saldo=0, entradas=0, saidas=0;
+let saldo=0,entradas=0,saidas=0;
+let filtroDia=filtro.value,filtroMesV=filtroMes.value;
+lista.innerHTML="";
 
-  let filtroDia = document.getElementById("filtro").value;
-let filtroMes = document.getElementById("filtroMes").value;
-  const lista = document.getElementById("lista");
-  lista.innerHTML="";
-
-  dados.forEach((d,i)=>{
-
-    if(filtroDia && d.dataISO !== filtroDia) return;
-
-if(filtroMes && !d.dataISO.startsWith(filtroMes)) return;
-
-    if(d.tipo==="entrada"){
-      saldo += d.valor;
-      entradas += d.valor;
-    } else{
-      saldo -= d.valor;
-      saidas += d.valor;
-    }
-
-    lista.innerHTML += `
-      <div class="transacao">
-        <div>
-          <strong>${formatar(d.valor)}</strong><br>
-          <small>${d.categoria} • ${d.data}</small>
-        </div>
-        <div>
-          <span class="${d.tipo}">${d.tipo}</span>
-          <button class="delete" onclick="remover(${i})">X</button>
-        </div>
-      </div>
-    `;
-  });
-
-  document.getElementById("saldo").innerText = formatar(saldo);
-  document.getElementById("entradas").innerText = formatar(entradas);
-  document.getElementById("saidas").innerText = formatar(saidas);
-  document.getElementById("reserva").innerText = formatar(reserva);
-  document.getElementById("filtroMes").addEventListener("input", atualizar);
-
-if(meta > 0){
-  let falta = meta - saldo;
-  if(falta < 0) falta = 0;
-
-  document.getElementById("metaInfo").innerText =
-    "Meta: " + formatar(meta) +
-    " | Falta: " + formatar(falta);
-}
-
-let progresso = 0;
-
-if(meta > 0){
-  progresso = (saldo / meta) * 100;
-  if(progresso > 100) progresso = 100;
-
-  document.getElementById("barraMeta").style.width = progresso + "%";
-}  
-
-let media = 0;
-
-if(dados.length > 0){
-  let total = 0;
-
-  dados.forEach(d=>{
-    if(d.tipo === "entrada") total += d.valor;
-    else total -= d.valor;
-  });
-
-  media = total / dados.length;
-}
-
-let previsao = saldo + (media * 30);
-
-document.getElementById("previsao").innerText =
-  "Saldo estimado em 30 dias: " + formatar(previsao);  
-  
-graficoCategorias();
-}
-
-function graficoEvolucao(){
-  let meses = {};
-
-  dados.forEach(d=>{
-    let mes = d.dataISO.slice(0,7);
-    if(!meses[mes]) meses[mes] = 0;
-
-    if(d.tipo==="entrada") meses[mes]+=d.valor;
-    else meses[mes]-=d.valor;
-  });
-
-  const ctx = document.getElementById("grafico").getContext("2d");
-
-  if(chart) chart.destroy();
-
-  chart = new Chart(ctx,{
-    type:"line",
-    data:{
-      labels:Object.keys(meses),
-      datasets:[{
-        label:"Saldo",
-        data:Object.values(meses)
-      }]
-    }
-  });
-}
-
-function carregarTempoReal(uid){
-  const ref = collection(db, "usuarios", uid, "transacoes");
-
-  onSnapshot(ref, snapshot => {
-    dados = [];
-    snapshot.forEach(docItem => {
-      dados.push({ id: docItem.id, ...docItem.data() });
-    });
-    atualizar();
-  });
-}
-  
-document.getElementById("filtro").addEventListener("input", atualizar);
-
-onAuthStateChanged(auth, user => {
-  if(user){
-    document.getElementById("userInfo").innerText = "Logado: " + user.email;
-
-    document.getElementById("loginBox").style.display = "none"; // 🔥 esconder login
-
-    carregarTempoReal(user.uid);
-  } else{
-    document.getElementById("userInfo").innerText = "";
-
-    document.getElementById("loginBox").style.display = "block"; // 🔥 mostrar login
-
-    dados = [];
-    atualizar();
-  }
+let total=0;
+dados.forEach((d,i)=>{
+if(filtroDia&&d.dataISO!==filtroDia)return;
+if(filtroMesV&&!d.dataISO.startsWith(filtroMesV))return;
+if(d.tipo==="entrada"){saldo+=d.valor;entradas+=d.valor;}else{saldo-=d.valor;saidas+=d.valor;}
+lista.innerHTML+=`<div class="transacao"><div><strong>${formatar(d.valor)}</strong><br><small>${d.categoria} • ${d.data}</small></div><div><span class="${d.tipo}">${d.tipo}</span><button class="delete" onclick="remover(${i})">X</button></div></div>`;
+total+=d.tipo==="entrada"?d.valor:-d.valor;
 });
+saldoElem.innerText=formatar(saldo);entradasElem.innerText=formatar(entradas);saidasElem.innerText=formatar(saidas);reservaElem.innerText=formatar(reserva);
 
-window.add = add;
-window.remover = remover;
-window.definirMeta = definirMeta;
-    
+// Barra meta
+let p=meta>0?Math.min((saldo/meta)*100,100):0;
+barraMeta.style.width=p+"%";
+alertaMeta.innerText=saldo>=meta?"Meta atingida! 🎯":"";
+alertaMeta.className=saldo>=meta?"alerta":"";
+metaInfo.innerText=`${formatar(meta)} | Falta: ${formatar(Math.max(meta-saldo,0))}`;
+
+// Previsão
+let media=dados.length>0?total/dados.length:0;
+previsao.innerText="Saldo estimado em 30 dias: "+formatar(saldo+media*30);
+
+// Gráficos
+let cat={};dados.forEach(d=>{if(d.tipo==="saida")cat[d.categoria]=(cat[d.categoria]||0)+d.valor;});
+if(chartCategorias)chartCategorias.destroy();
+chartCategorias=new Chart(graficoCategorias.getContext("2d"),{type:"pie",data:{labels:Object.keys(cat),datasets:[{data:Object.values(cat),backgroundColor:['#22c55e','#ef4444','#facc15','#3b82f6','#8b5cf6']}]}});
+
+let evo={};dados.forEach(d=>{let m=d.dataISO.slice(0,7);evo[m]=evo[m]||0;evo[m]+=d.tipo==="entrada"?d.valor:-d.valor;});
+if(chartEvolucao)chartEvolucao.destroy();
+chartEvolucao=new Chart(graficoEvolucao.getContext("2d"),{type:"line",data:{labels:Object.keys(evo),datasets:[{label:"Saldo",data:Object.values(evo),borderColor:'#22c55e',fill:false}]}});
+}
+
+// Carregar realtime
+function carregarTempoReal(uid){
+const ref=collection(db,"usuarios",uid,"transacoes");
+onSnapshot(ref,snapshot=>{dados=[];snapshot.forEach(d=>dados.push({id:d.id,...d.data()}));atualizar();});
+}
+
+filtro.addEventListener("input",atualizar); filtroMes.addEventListener("input",atualizar);
+onAuthStateChanged(auth,user=>{if(user){userInfo.innerText="Logado: "+user.email;loginBox.style.display="none";carregarTempoReal(user.uid);}else{userInfo.innerText="";loginBox.style.display="block";dados=[];atualizar();}});
+window.add=add; window.remover=remover; window.definirMeta=definirMeta;
 </script>
-
 </body>
 </html>
