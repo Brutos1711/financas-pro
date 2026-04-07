@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Login Finanças PRO+</title>
+<style>
+body{font-family:Arial;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+.card{background:#1e293b;padding:20px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.3);width:300px;}
+input,button{width:100%;padding:10px;margin:10px 0;border-radius:8px;border:none;}
+button{background:#22c55e;color:white;cursor:pointer;}
+button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>Finanças PRO+</h2>
+<input id="email" placeholder="Email">
+<input id="senha" type="password" placeholder="Senha">
+<button id="btnLogin">Entrar</button>
+<button id="btnRegistrar">Registrar</button>
+<p id="msg"></p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "COLOQUE_SUA_APIKEY_AQUI",
+  authDomain: "SEU_PROJETO.firebaseapp.com",
+  projectId: "SEU_PROJETO",
+  storageBucket: "SEU_PROJETO.appspot.com",
+  messagingSenderId: "SEU_MESSAGING_ID",
+  appId: "SEU_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+const email = document.getElementById("email");
+const senha = document.getElementById("senha");
+const msg = document.getElementById("msg");
+const btnLogin = document.getElementById("btnLogin");
+const btnRegistrar = document.getElementById("btnRegistrar");
+
+// Login
+btnLogin.onclick = async ()=>{
+  try{
+    await signInWithEmailAndPassword(auth,email.value,senha.value);
+    window.location.href="financas.html"; // redireciona para a página principal
+  }catch(e){msg.innerText=e.message;}
+}
+
+// Registrar
+btnRegistrar.onclick = async ()=>{
+  try{
+    await createUserWithEmailAndPassword(auth,email.value,senha.value);
+    window.location.href="financas.html";
+  }catch(e){msg.innerText=e.message;}
+}
+
+// Se já estiver logado, pula o login
+onAuthStateChanged(auth,user=>{
+  if(user) window.location.href="financas.html";
+});
+</script>
+</body>
+</html>
