@@ -9,6 +9,7 @@ body{font-family:Arial;background:#0f172a;color:#e2e8f0;display:flex;align-items
 input,button{width:100%;padding:10px;margin:10px 0;border-radius:8px;border:none;}
 button{background:#22c55e;color:white;cursor:pointer;}
 button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
+#msg{color:#facc15;font-size:14px;text-align:center;}
 </style>
 </head>
 <body>
@@ -25,6 +26,7 @@ button:hover{opacity:0.9;transform:scale(1.02);transition:0.2s;}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
+// 🔑 Sua configuração Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDC9bzY8IsavRdL9N4L8B0IQgOSQ-qgE_Y",
   authDomain: "financasbarreto-30f9d.firebaseapp.com",
@@ -44,23 +46,27 @@ const msg = document.getElementById("msg");
 const btnLogin = document.getElementById("btnLogin");
 const btnRegistrar = document.getElementById("btnRegistrar");
 
-// Login
+// 🔹 Login
 btnLogin.onclick = async ()=>{
   try{
     await signInWithEmailAndPassword(auth,email.value,senha.value);
-    window.location.href="financas.html"; // redireciona para a página principal
-  }catch(e){msg.innerText=e.message;}
+    window.location.href="financas.html";
+  }catch(e){
+    msg.innerText=e.message;
+  }
 }
 
-// Registrar
+// 🔹 Registrar
 btnRegistrar.onclick = async ()=>{
   try{
     await createUserWithEmailAndPassword(auth,email.value,senha.value);
     window.location.href="financas.html";
-  }catch(e){msg.innerText=e.message;}
+  }catch(e){
+    msg.innerText=e.message;
+  }
 }
 
-// Se já estiver logado, pula o login
+// 🔹 Se já estiver logado, pula o login
 onAuthStateChanged(auth,user=>{
   if(user) window.location.href="financas.html";
 });
