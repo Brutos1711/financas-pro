@@ -10,13 +10,12 @@
   --danger:#ef4444; --text:#e2e8f0; --warning:#facc15;
 }
 body{font-family:Arial, background:var(--bg); color:var(--text); margin:0; padding:15px;}
-header{background:linear-gradient(135deg,#22c55e,#15803d); padding:15px; border-radius:12px; text-align:center; font-weight:bold; font-size:22px;}
 .card{background:var(--card); padding:15px; border-radius:12px; margin-top:15px; box-shadow:0 4px 10px rgba(0,0,0,0.3);}
 .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:15px;}
 .stat{text-align:center;}
 input,select{width:100%; padding:8px; border:none; border-radius:8px; margin:5px 0;}
 button{width:100%; padding:10px; border:none; border-radius:8px; background:var(--accent); color:white; cursor:pointer;}
-button:hover{opacity:0.9; transform:scale(1.02); transition:0.2s;}
+  button:hover{opacity:0.9; transform:scale(1.02); transition:0.2s;}
 
   .barra-meta{background:#334155; border-radius:10px; height:20px; margin-top:10px;}
 
@@ -35,6 +34,46 @@ button:hover{opacity:0.9; transform:scale(1.02); transition:0.2s;}
   transform:scale(1.02);
 }
 
+.topo{
+  background: linear-gradient(135deg,#22c55e,#15803d);
+  padding:20px;
+  border-radius:16px;
+  margin-bottom:15px;
+}
+
+.topo small{
+  opacity:0.8;
+}
+
+.topo h1{
+  margin:5px 0 0;
+  font-size:28px;
+}
+
+.card{
+  background: linear-gradient(145deg,#1e293b,#0f172a);
+  border-radius:16px;
+  padding:15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+.transacao button{
+  width:auto;
+  padding:5px 8px;
+}  
+
+  body{
+  max-width:500px;
+  margin:auto;
+}
+
+  canvas{
+  margin-top:10px;
+}
+  
+button{
+  margin-left:5px;
+}
   .entrada{color:#22c55e;} .saida{color:#ef4444;}
 
   .delete{background:var(--danger); padding:4px 8px; font-size:12px; border-radius:6px;}
@@ -46,8 +85,14 @@ button:hover{opacity:0.9; transform:scale(1.02); transition:0.2s;}
 </head>
 
 <body>
-<header>💳 Finanças PRO+</header>
-
+  
+<header class="topo">
+  <div>
+    <small>Saldo disponível</small>
+    <h1 id="saldo">R$0</h1>
+  </div>
+  
+</header>
 <!-- Metas -->
 <div class="card">
   <h3>Meta Mensal</h3>
@@ -101,16 +146,36 @@ button:hover{opacity:0.9; transform:scale(1.02); transition:0.2s;}
 
 <!-- Resumo -->
 <div class="card grid">
-  <div class="stat"><small>Saldo</small><h3 id="saldo">R$0</h3></div>
-  <div class="stat"><small>Entradas</small><h3 id="entradas">R$0</h3></div>
-  <div class="stat"><small>Saídas</small><h3 id="saidas">R$0</h3></div>
-  <div class="stat"><small>Reserva</small><h3 id="reserva">R$0</h3></div>
+  <div class="stat">
+    <small>Entradas</small>
+    <h3 id="entradas">R$0</h3>
+  </div>
+
+  <div class="stat">
+    <small>Saídas</small>
+    <h3 id="saidas">R$0</h3>
+  </div>
+
+  <div class="stat">
+    <small>Reserva</small>
+    <h3 id="reserva">R$0</h3>
+  </div>
 </div>
 
-<!-- Gráficos -->
-<div class="card grid">
-  <div><canvas id="graficoCategorias"></canvas></div>
-  <div><canvas id="graficoEvolucao"></canvas></div>
+<!-- Dashboard de Gráficos -->
+<div class="card">
+  <h3>Visão geral</h3>
+  <canvas id="graficoResumo"></canvas>
+</div>
+
+<div class="card">
+  <h3>Gastos por categoria</h3>
+  <canvas id="graficoCategorias"></canvas>
+</div>
+
+<div class="card">
+  <h3>Evolução do saldo</h3>
+  <canvas id="graficoEvolucao"></canvas>
 </div>
 
 <div class="card">
@@ -141,6 +206,12 @@ const firebaseConfig = {
   measurementId: "G-7RC7ES7824"
 };
 
+document.addEventListener("DOMContentLoaded", () => {
+  iniciarApp();
+});
+
+function iniciarApp(){
+  
 const saldoElem = document.getElementById("saldo");
 const entradasElem = document.getElementById("entradas");
 const saidasElem = document.getElementById("saidas");
@@ -148,6 +219,8 @@ const reservaElem = document.getElementById("reserva");
 const previsao = document.getElementById("previsao");
 const listaRendaFixa = document.getElementById("listaRendaFixa");
 const listaDespFixa = document.getElementById("listaDespFixa");
+const listaExtras = document.getElementById("listaExtras");
+const listaDespesas = document.getElementById("listaDespesas");
   
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -284,12 +357,14 @@ window.addExtra = ()=>{
 
   if(!valor || !categoria) return;
 
-  adicionarItem("extras",{
-    valor:Number(valor),
-    categoria,
-    data,
-    tipo: valor > 0 ? "entrada" : "saida"
-  });
+const num = Number(valor);
+
+adicionarItem("extras",{
+  valor: num,
+  categoria,
+  data,
+  tipo: num > 0 ? "entrada" : "saida"
+});
 
   // ✅ LIMPAR CAMPOS (fora do objeto)
   extraValor.value = "";
@@ -316,10 +391,14 @@ window.addDesp = ()=>{
   despData.value = "";
 };
 
-let graficoCat, graficoEvo;
+let graficoCat, graficoEvo, graficoResumo;
 
-function gerarGraficos(){
+function gerarGraficos(entradas, saidas){
   // 🔹 Agrupar por categoria
+if(entradas === 0 && saidas === 0){
+  return;
+}
+  
   const categorias = {};
   
   despesas.forEach(d=>{
@@ -351,7 +430,7 @@ if(labels.length === 0){
   const valoresEvo = [];
 
   despesas
-    .sort((a,b)=> new Date(a.data) - new Date(b.data))
+    .sort((a,b)=> (a.data || "").localeCompare(b.data || ""))
     .forEach(d=>{
       saldoTemp -= d.valor;
       dias.push(d.data || "dia");
@@ -370,99 +449,202 @@ if(labels.length === 0){
       }]
     }
   });
+
+if(graficoResumo) graficoResumo.destroy();
+
+graficoResumo = new Chart(document.getElementById("graficoResumo"), {
+  type: "bar",
+  data: {
+    labels: ["Entradas", "Saídas"],
+    datasets: [{
+      label: "Resumo Financeiro",
+      data: [entradas, saidas],
+      backgroundColor: ["#22c55e", "#ef4444"],
+      borderRadius: 8
+    }]
+  },
+  options: {
+    plugins: {
+      legend: {
+        display: false
+      }
+    }
+  }
+});
+  
 }
+
+function gerarDica(saldo, entradas, saidas){
+  if(saldo < 0) return "🚨 Cuidado: você está no negativo!";
+  if(saidas > entradas * 0.8) return "⚠️ Gastos altos! Reduza despesas.";
+  if(reservaElem.innerText === "R$0,00") return "💡 Comece uma reserva!";
+  return "✅ Situação financeira saudável";
+}
+  
+window.removerItem = async(col,id)=>{
+  const user = auth.currentUser;
+  await deleteDoc(doc(db,"usuarios",user.uid,col,id));
+};
   
 // UI
 function atualizar(){
-  let saldo=0, entradas=0, saidas=0;
+  let saldo = 0, entradas = 0, saidas = 0;
 
-  listaRendaFixa.innerHTML="";
-  listaDespFixa.innerHTML="";
-  listaExtras.innerHTML="";
-  listaDespesas.innerHTML="";
+  // =======================
+  // 💰 RENDA FIXA
+  // =======================
+  listaRendaFixa.innerHTML = "";
+  let htmlRenda = "";
 
-  // RENDA FIXA
   rendaFixa.forEach(d=>{
-    saldo+=d.valor;
-    entradas+=d.valor;
+    saldo += d.valor;
+    entradas += d.valor;
 
-    listaRendaFixa.innerHTML+=`
-    <div class="transacao entrada">
-      ${d.categoria} - ${d.valor}
-    </div>`;
+    htmlRenda += `
+      <div class="transacao entrada">
+        ${d.categoria} - ${Number(d.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+
+        <button onclick="editarItem('rendaFixa','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
+        <button class="delete" onclick="removerItem('rendaFixa','${d.id}')">🗑</button>
+      </div>
+    `;
   });
 
-  // DESPESA FIXA
+  listaRendaFixa.innerHTML = htmlRenda;
+
+
+  // =======================
+  // 💸 DESPESAS FIXAS
+  // =======================
+  listaDespFixa.innerHTML = "";
+  let htmlDespFixa = "";
+
   despFixa.forEach(d=>{
     let pagar = true;
 
-    if(d.tipo==="parcelado"){
-      if(d.parcelasPagas >= d.parcelasTotal) pagar=false;
+    if(d.tipo === "parcelado"){
+      if(d.parcelasPagas >= d.parcelasTotal) pagar = false;
     }
 
     if(pagar){
-      saldo-=d.valor;
-      saidas+=d.valor;
+      saldo -= d.valor;
+      saidas += d.valor;
     }
-    
-    listaDespFixa.innerHTML+=`
-    <div class="transacao saida">
-      ${d.categoria} - ${d.valor}
-    </div>`;
+
+    htmlDespFixa += `
+      <div class="transacao saida">
+        ${d.categoria} - ${Number(d.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+
+        <button onclick="editarItem('despesasFixas','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
+        <button class="delete" onclick="removerItem('despesasFixas','${d.id}')">🗑</button>
+      </div>
+    `;
   });
 
-  // EXTRAS
+  listaDespFixa.innerHTML = htmlDespFixa;
+
+
+  // =======================
+  // 💵 EXTRAS
+  // =======================
+  listaExtras.innerHTML = "";
+  let htmlExtras = "";
+
   extras.forEach(d=>{
-    if(d.tipo==="entrada"){
-      saldo+=d.valor;
-      entradas+=d.valor;
+    if(d.tipo === "entrada"){
+      saldo += d.valor;
+      entradas += d.valor;
     } else {
-      saldo-=d.valor;
-      saidas+=d.valor;
+      saldo -= d.valor;
+      saidas += d.valor;
     }
 
-    listaExtras.innerHTML+=`
-    <div class="transacao ${d.tipo==="entrada"?"entrada":"saida"}">
-      ${d.categoria} - ${d.valor}
-    </div>`;
+    htmlExtras += `
+      <div class="transacao ${d.tipo === "entrada" ? "entrada" : "saida"}">
+        ${d.categoria} - ${Number(d.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+
+        <button onclick="editarItem('extras','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
+        <button class="delete" onclick="removerItem('extras','${d.id}')">🗑</button>
+      </div>
+    `;
   });
 
-  // DESPESAS DO MÊS
+  listaExtras.innerHTML = htmlExtras;
+
+
+  // =======================
+  // 📉 DESPESAS DO MÊS
+  // =======================
+  listaDespesas.innerHTML = "";
+  let htmlDespesas = "";
+
   despesas.forEach(d=>{
-    saldo-=d.valor;
-    saidas+=d.valor;
+    saldo -= d.valor;
+    saidas += d.valor;
 
-    listaDespesas.innerHTML+=`
-    <div class="transacao saida">
-      ${d.categoria} - ${d.valor}
-    </div>`;
+    htmlDespesas += `
+      <div class="transacao saida">
+        ${d.categoria} - ${Number(d.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+
+        <button onclick="editarItem('despesasMes','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
+        <button class="delete" onclick="removerItem('despesasMes','${d.id}')">🗑</button>
+      </div>
+    `;
   });
 
-  // RESERVA (20% do saldo positivo)
+  listaDespesas.innerHTML = htmlDespesas;
+
+
+  // =======================
+  // 🧠 RESERVA (20%)
+  // =======================
   let reserva = saldo > 0 ? saldo * 0.2 : 0;
 
-  // UI
+
+  // =======================
+  // 🎨 ATUALIZA UI
+  // =======================
   saldoElem.innerText = saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  saldoElem.style.transition = "0.4s";
+  saldoElem.style.color = saldo < 0 ? "#ef4444" : "#22c55e";
+
   entradasElem.innerText = entradas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
   saidasElem.innerText = saidas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
   reservaElem.innerText = reserva.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+
+
+  // =======================
+  // 📊 FUNÇÕES EXTRAS
+  // =======================
   atualizarMeta(saldo);
-  gerarGraficos();
+  gerarGraficos(entradas, saidas);
   calcularPrevisao(saldo);
 
-if(saidas > entradas){
-  previsao.innerText = previsao.innerText.replace(/⚠️.*/,"");
-  previsao.innerText += " ⚠️ Você está gastando mais do que ganha!";
+
+  // =======================
+  // ⚠️ ALERTA INTELIGENTE
+  // =======================
+  if(saidas > entradas){
+    previsao.innerText = previsao.innerText.split("⚠️")[0];
+    previsao.innerText += " ⚠️ Você está gastando mais do que ganha!";
+  }
 }
   
-}
-
 function calcularPrevisao(saldo){
+
   const mediaGasto = despesas.length 
     ? despesas.reduce((a,b)=>a+b.valor,0)/despesas.length 
     : 0;
 
-  const previsao30 = saldo - (mediaGasto * 30);
+  const somaDespesasFixas = despFixa.reduce((total,d)=>{
+    if(d.tipo === "recorrente") return total + d.valor;
+    if(d.tipo === "parcelado" && d.parcelasPagas < d.parcelasTotal){
+      return total + d.valor;
+    }
+    return total;
+  },0);
+
+  const previsao30 = saldo - (mediaGasto * 30) - somaDespesasFixas;
 
   previsao.innerText = 
     "Saldo estimado em 30 dias: " +
@@ -494,6 +676,11 @@ function atualizarMeta(saldo){
   } else {
     alerta.innerText = "";
   }
+  if(saldo < 0){
+  saldoElem.style.color = "#ef4444";
+}else{
+  saldoElem.style.color = "#22c55e";
+}
 }
   
 // AUTH
