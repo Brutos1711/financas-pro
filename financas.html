@@ -17,13 +17,31 @@ header{background:linear-gradient(135deg,#22c55e,#15803d); padding:15px; border-
 input,select{width:100%; padding:8px; border:none; border-radius:8px; margin:5px 0;}
 button{width:100%; padding:10px; border:none; border-radius:8px; background:var(--accent); color:white; cursor:pointer;}
 button:hover{opacity:0.9; transform:scale(1.02); transition:0.2s;}
-.barra-meta{background:#334155; border-radius:10px; height:20px; margin-top:10px;}
-.barra-preenchida{height:100%; width:0%; background:var(--accent); border-radius:10px; transition:0.5s;}
-.transacao{display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #334155;}
-.entrada{color:#22c55e;} .saida{color:#ef4444;}
-.delete{background:var(--danger); padding:4px 8px; font-size:12px; border-radius:6px;}
-.alerta{color:var(--warning); font-weight:bold;}
-@media(max-width:600px){.grid{grid-template-columns:1fr;}}
+
+  .barra-meta{background:#334155; border-radius:10px; height:20px; margin-top:10px;}
+
+  .barra-preenchida{height:100%; width:0%; background:var(--accent); border-radius:10px; transition:0.5s;}
+
+.transacao{
+  display:flex;
+  justify-content:space-between;
+  padding:10px;
+  border-bottom:1px solid #334155;
+  transition:0.2s;
+}
+
+.transacao:hover{
+  background:#334155;
+  transform:scale(1.02);
+}
+
+  .entrada{color:#22c55e;} .saida{color:#ef4444;}
+
+  .delete{background:var(--danger); padding:4px 8px; font-size:12px; border-radius:6px;}
+
+  .alerta{color:var(--warning); font-weight:bold;}
+
+  @media(max-width:600px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
 
@@ -123,6 +141,14 @@ const firebaseConfig = {
   measurementId: "G-7RC7ES7824"
 };
 
+const saldoElem = document.getElementById("saldo");
+const entradasElem = document.getElementById("entradas");
+const saidasElem = document.getElementById("saidas");
+const reservaElem = document.getElementById("reserva");
+const previsao = document.getElementById("previsao");
+const listaRendaFixa = document.getElementById("listaRendaFixa");
+const listaDespFixa = document.getElementById("listaDespFixa");
+  
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -156,6 +182,8 @@ window.addRendaFixa = ()=>{
   if(!valor) return;
 
   adicionarItem("rendaFixa",{valor:Number(valor),categoria});
+  rendaFixaValor.value = "";
+rendaFixaCategoria.value = "Salário";
 };
 
 // 🔥 DESPESA FIXA COM PARCELA
@@ -168,6 +196,7 @@ window.addDespFixa = ()=>{
 
   if(tipo === "parcelado"){
     const total = Number(prompt("Total de parcelas"));
+
     adicionarItem("despesasFixas",{
       valor:Number(valor),
       categoria,
@@ -175,13 +204,20 @@ window.addDespFixa = ()=>{
       parcelasTotal: total,
       parcelasPagas: 0
     });
+
   } else {
+
     adicionarItem("despesasFixas",{
       valor:Number(valor),
       categoria,
       tipo:"recorrente"
     });
+
   }
+
+  // ✅ LIMPA SEMPRE (no final)
+  despFixaValor.value = "";
+  despFixaCategoria.value = "";
 };
 
 // PAGAR PARCELA
@@ -241,47 +277,225 @@ function carregar(col, setter){
   });
 }
 
+window.addExtra = ()=>{
+  const valor = extraValor.value;
+  const categoria = extraCategoria.value;
+  const data = extraData.value;
+
+  if(!valor || !categoria) return;
+
+  adicionarItem("extras",{
+    valor:Number(valor),
+    categoria,
+    data,
+    tipo: valor > 0 ? "entrada" : "saida"
+  });
+
+  // ✅ LIMPAR CAMPOS (fora do objeto)
+  extraValor.value = "";
+  extraCategoria.value = "";
+  extraData.value = "";
+};
+
+window.addDesp = ()=>{
+  const valor = despValor.value;
+  const categoria = despCategoria.value;
+  const data = despData.value;
+
+  if(!valor || !categoria) return;
+
+  adicionarItem("despesasMes",{
+    valor:Number(valor),
+    categoria,
+    data
+  });
+
+  // ✅ LIMPAR CAMPOS
+  despValor.value = "";
+  despCategoria.value = "";
+  despData.value = "";
+};
+
+let graficoCat, graficoEvo;
+
+function gerarGraficos(){
+  // 🔹 Agrupar por categoria
+  const categorias = {};
+  
+  despesas.forEach(d=>{
+    categorias[d.categoria] = (categorias[d.categoria]||0) + d.valor;
+  });
+
+const labels = Object.keys(categorias);
+const valores = Object.values(categorias);
+
+if(labels.length === 0){
+  return;
+}
+
+  if(graficoCat) graficoCat.destroy();
+
+  graficoCat = new Chart(document.getElementById("graficoCategorias"), {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{
+        data: valores
+      }]
+    }
+  });
+
+  // 🔹 Evolução do saldo
+  let saldoTemp = 0;
+  const dias = [];
+  const valoresEvo = [];
+
+  despesas
+    .sort((a,b)=> new Date(a.data) - new Date(b.data))
+    .forEach(d=>{
+      saldoTemp -= d.valor;
+      dias.push(d.data || "dia");
+      valoresEvo.push(saldoTemp);
+    });
+
+  if(graficoEvo) graficoEvo.destroy();
+
+  graficoEvo = new Chart(document.getElementById("graficoEvolucao"), {
+    type: "line",
+    data: {
+      labels: dias,
+      datasets: [{
+        label:"Saldo",
+        data: valoresEvo
+      }]
+    }
+  });
+}
+  
 // UI
 function atualizar(){
   let saldo=0, entradas=0, saidas=0;
 
   listaRendaFixa.innerHTML="";
   listaDespFixa.innerHTML="";
+  listaExtras.innerHTML="";
+  listaDespesas.innerHTML="";
 
+  // RENDA FIXA
   rendaFixa.forEach(d=>{
-    saldo+=d.valor; entradas+=d.valor;
+    saldo+=d.valor;
+    entradas+=d.valor;
+
     listaRendaFixa.innerHTML+=`
-      <div class="transacao">
-        ${d.categoria} - ${d.valor}
-        <button onclick="editarItem('rendaFixa','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
-      </div>`;
+    <div class="transacao entrada">
+      ${d.categoria} - ${d.valor}
+    </div>`;
   });
 
+  // DESPESA FIXA
   despFixa.forEach(d=>{
-    let texto = `${d.categoria} - ${d.valor}`;
+    let pagar = true;
 
     if(d.tipo==="parcelado"){
-      texto += ` (${d.parcelasPagas}/${d.parcelasTotal})`;
-      if(d.parcelasPagas < d.parcelasTotal){
-        saldo-=d.valor; saidas+=d.valor;
-      }
-    } else {
-      saldo-=d.valor; saidas+=d.valor;
+      if(d.parcelasPagas >= d.parcelasTotal) pagar=false;
     }
 
+    if(pagar){
+      saldo-=d.valor;
+      saidas+=d.valor;
+    }
+    
     listaDespFixa.innerHTML+=`
-      <div class="transacao">
-        ${texto}
-        ${d.tipo==="parcelado" ? `<button onclick="pagarParcela('${d.id}')">💸</button>` : ""}
-        <button onclick="editarItem('despesasFixas','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
-      </div>`;
+    <div class="transacao saida">
+      ${d.categoria} - ${d.valor}
+    </div>`;
   });
 
-  saldoElem.innerText=saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  entradasElem.innerText=entradas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  saidasElem.innerText=saidas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  // EXTRAS
+  extras.forEach(d=>{
+    if(d.tipo==="entrada"){
+      saldo+=d.valor;
+      entradas+=d.valor;
+    } else {
+      saldo-=d.valor;
+      saidas+=d.valor;
+    }
+
+    listaExtras.innerHTML+=`
+    <div class="transacao ${d.tipo==="entrada"?"entrada":"saida"}">
+      ${d.categoria} - ${d.valor}
+    </div>`;
+  });
+
+  // DESPESAS DO MÊS
+  despesas.forEach(d=>{
+    saldo-=d.valor;
+    saidas+=d.valor;
+
+    listaDespesas.innerHTML+=`
+    <div class="transacao saida">
+      ${d.categoria} - ${d.valor}
+    </div>`;
+  });
+
+  // RESERVA (20% do saldo positivo)
+  let reserva = saldo > 0 ? saldo * 0.2 : 0;
+
+  // UI
+  saldoElem.innerText = saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  entradasElem.innerText = entradas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  saidasElem.innerText = saidas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  reservaElem.innerText = reserva.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  atualizarMeta(saldo);
+  gerarGraficos();
+  calcularPrevisao(saldo);
+
+if(saidas > entradas){
+  previsao.innerText = previsao.innerText.replace(/⚠️.*/,"");
+  previsao.innerText += " ⚠️ Você está gastando mais do que ganha!";
+}
+  
 }
 
+function calcularPrevisao(saldo){
+  const mediaGasto = despesas.length 
+    ? despesas.reduce((a,b)=>a+b.valor,0)/despesas.length 
+    : 0;
+
+  const previsao30 = saldo - (mediaGasto * 30);
+
+  previsao.innerText = 
+    "Saldo estimado em 30 dias: " +
+    previsao30.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+}
+  
+function atualizarMeta(saldo){
+  if(meta <= 0) return;
+
+  const barra = document.getElementById("barraMeta");
+  const info = document.getElementById("metaInfo");
+  const alerta = document.getElementById("alertaMeta");
+  
+  const porcentagem = Math.min((saldo/meta)*100,100);
+  barra.style.width = porcentagem + "%";
+
+  const falta = meta - saldo;
+
+  info.innerText =
+    `Meta: ${meta.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+     | Falta: ${falta.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}`;
+
+  if(porcentagem >= 100){
+    alerta.innerText = "🎉 Meta atingida!";
+    alerta.className = "";
+  } else if(porcentagem >= 70){
+    alerta.innerText = "🔥 Quase lá!";
+    alerta.className = "alerta";
+  } else {
+    alerta.innerText = "";
+  }
+}
+  
 // AUTH
 let carregado = false;
 
