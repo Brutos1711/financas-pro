@@ -120,6 +120,10 @@ button{
   <h3>Despesas Fixas</h3>
   <input id="despFixaValor" placeholder="Valor">
   <input id="despFixaCategoria" placeholder="Categoria">
+  <select id="tipoDespesa">
+  <option value="recorrente">Recorrente</option>
+  <option value="parcelado">Parcelado</option>
+</select>
   <button onclick="addDespFixa()">Adicionar Despesa Fixa</button>
   <div id="listaDespFixa"></div>
 </div>
@@ -193,7 +197,7 @@ button{
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 // CONFIG
 const firebaseConfig = {
@@ -228,22 +232,29 @@ const db = getFirestore(app);
 
 // VARIÁVEIS
 let rendaFixa=[], despFixa=[], extras=[], despesas=[];
-let meta = Number(localStorage.getItem("meta"))||0;
-
+let meta = 0;
+  
 // LOGOUT
 window.logout = ()=> signOut(auth).then(()=>window.location.href="login.html");
 
 // META
-window.definirMeta = ()=>{
+window.definirMeta = async ()=>{
+  const user = auth.currentUser;
+  if(!user) return;
+
   meta = Number(metaValor.value)||0;
-  localStorage.setItem("meta",meta);
+
+  await setDoc(doc(db,"usuarios",user.uid,"config","meta"),{
+    valor: meta
+  });
+
   atualizar();
 };
 
 // 🔥 ADICIONAR ITEM GENÉRICO
 async function adicionarItem(col, data){
   const user = auth.currentUser;
-  if(!user) return alert("Faça login");
+  if(!user) return;
 
   await addDoc(collection(db,"usuarios",user.uid,col), data);
 }
@@ -263,8 +274,7 @@ rendaFixaCategoria.value = "Salário";
 window.addDespFixa = ()=>{
   const valor = despFixaValor.value;
   const categoria = despFixaCategoria.value;
-  const tipo = prompt("Digite: parcelado ou recorrente");
-
+const tipo = tipoDespesa.value;
   if(!valor || !categoria || !tipo) return;
 
   if(tipo === "parcelado"){
@@ -395,6 +405,9 @@ let graficoCat, graficoEvo, graficoResumo;
 
 function gerarGraficos(entradas, saidas){
   // 🔹 Agrupar por categoria
+  if(graficoResumo) graficoResumo.destroy();
+if(graficoCat) graficoCat.destroy();
+if(graficoEvo) graficoEvo.destroy();
 if(entradas === 0 && saidas === 0){
   return;
 }
@@ -483,6 +496,8 @@ function gerarDica(saldo, entradas, saidas){
   
 window.removerItem = async(col,id)=>{
   const user = auth.currentUser;
+  if(!user) return;
+
   await deleteDoc(doc(db,"usuarios",user.uid,col,id));
 };
   
@@ -686,22 +701,29 @@ function atualizarMeta(saldo){
 // AUTH
 let carregado = false;
 
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async user => {
   if(!user){
     window.location.href = "login.html";
     return;
   }
 
-  if(carregado) return; // 🔥 impede duplicação
+  if(carregado) return;
 
   carregado = true;
+
+  // 🔥 carregar meta ANTES
+  const ref = doc(db,"usuarios",user.uid,"config","meta");
+  const snap = await getDoc(ref);
+
+  if(snap.exists()){
+    meta = snap.data().valor;
+  }
 
   carregar("rendaFixa", v=>rendaFixa=v);
   carregar("despesasFixas", v=>despFixa=v);
   carregar("extras", v=>extras=v);
   carregar("despesasMes", v=>despesas=v);
 });
-
 </script>
   
 </body>
