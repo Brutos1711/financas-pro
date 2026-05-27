@@ -3,13 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <title>Finanças PRO+</title>
+
+<link rel="manifest" href="manifest.json">
+
+<meta name="theme-color" content="#22c55e">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 :root{
-  --bg:#0f172a; --card:#1e293b; --accent:#22c55e;
-  --danger:#ef4444; --text:#e2e8f0; --warning:#facc15;
+  --bg:#0f172a;
+  --card:#1e293b;
+  --accent:#22c55e;
+  --danger:#ef4444;
+  --text:#e2e8f0;
+  --warning:#facc15;
+  --menu:#111827;
+  --menuBtn:#1f2937;
 }
-body{font-family:Arial, background:var(--bg); color:var(--text); margin:0; padding:15px;}
+
+/* 🌞 TEMA CLARO */
+.light{
+
+  --bg:#f1f5f9;
+
+  --card:#ffffff;
+
+  --text:#0f172a;
+
+  --menu:#e2e8f0;
+
+  --menuBtn:#cbd5e1;
+
+}
+body{
+  font-family:Arial;
+  background:var(--bg);
+  color:var(--text);
+  margin:0;
+  padding:0;
+overflow-x:hidden;
+}
+  
 .card{background:var(--card); padding:15px; border-radius:12px; margin-top:15px; box-shadow:0 4px 10px rgba(0,0,0,0.3);}
 .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:15px;}
 .stat{text-align:center;}
@@ -62,11 +100,6 @@ button{width:100%; padding:10px; border:none; border-radius:8px; background:var(
   padding:5px 8px;
 }  
 
-  body{
-  max-width:500px;
-  margin:auto;
-}
-
   canvas{
   margin-top:10px;
 }
@@ -81,116 +114,363 @@ button{
   .alerta{color:var(--warning); font-weight:bold;}
 
   @media(max-width:600px){.grid{grid-template-columns:1fr;}}
+
+/* ===== MENU LATERAL ===== */
+
+.app{
+  display:flex;
+  min-height:100vh;
+}
+
+.sidebar{
+  width:250px;
+  background:var(--menu);
+  position:fixed;
+  top:0;
+  left:0;
+  bottom:0;
+  padding:20px;
+  overflow:auto;
+  transition:0.3s;
+  z-index:1000;
+}
+
+.sidebar h2{
+  color:#22c55e;
+  margin-bottom:20px;
+}
+
+.sidebar button{
+  width:100%;
+  margin-bottom:10px;
+  background:var(--menuBtn);
+  text-align:left;
+}
+
+.sidebar button:hover{
+  background:#22c55e;
+}
+
+.content{
+  flex:1;
+  margin-left:250px;
+  padding:20px;
+  width:100%;
+  box-sizing:border-box;
+}
+
+.page{
+  display:none;
+}
+
+.page.active{
+  display:block;
+}
+
+/* BOTÃO MENU */
+.menuBtn{
+  display:none;
+  position:fixed;
+  top:10px;
+  left:10px;
+  z-index:2000;
+  width:auto;
+  padding:10px 15px;
+  border-radius:10px;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+
+  .sidebar{
+    left:-260px;
+  }
+
+  .sidebar.active{
+    left:0;
+  }
+
+  .content{
+    margin-left:0;
+    padding-top:70px;
+  }
+
+  .menuBtn{
+    display:block;
+  }
+
+}
+  
 </style>
 </head>
 
 <body>
-  
-<header class="topo">
-  <div>
-    <small>Saldo disponível</small>
-    <h1 id="saldo">R$0</h1>
-  </div>
-  
-</header>
-<!-- Metas -->
-<div class="card">
-  <h3>Meta Mensal</h3>
-  <div class="barra-meta"><div id="barraMeta" class="barra-preenchida"></div></div>
-  <p id="metaInfo">R$0 | Falta: R$0</p>
-  <p id="alertaMeta"></p>
-  <input id="metaValor" placeholder="Valor da meta"><button onclick="definirMeta()">Salvar Meta</button>
-</div>
 
-<!-- Renda Fixa -->
-<div class="card">
-  <h3>Renda Fixa</h3>
-  <input id="rendaFixaValor" placeholder="Valor">
-  <select id="rendaFixaCategoria">
-  <option>Salário</option>
-  <option>Freelance</option>
-  <option>Investimentos</option>
-</select>
-  <button onclick="addRendaFixa()">Adicionar Renda Fixa</button>
-  <div id="listaRendaFixa"></div>
-</div>
+<button class="menuBtn" onclick="toggleMenu()">☰</button>
 
-<!-- Despesas Fixas -->
-<div class="card">
-  <h3>Despesas Fixas</h3>
-  <input id="despFixaValor" placeholder="Valor">
-  <input id="despFixaCategoria" placeholder="Categoria">
-  <select id="tipoDespesa">
-  <option value="recorrente">Recorrente</option>
-  <option value="parcelado">Parcelado</option>
-</select>
-  <button onclick="addDespFixa()">Adicionar Despesa Fixa</button>
-  <div id="listaDespFixa"></div>
-</div>
+<div class="app">
 
-<!-- Extras -->
-<div class="card">
-  <h3>Extras</h3>
-  <input id="extraValor" placeholder="Valor">
-  <input id="extraCategoria" placeholder="Categoria">
-  <input type="date" id="extraData">
-  <button onclick="addExtra()">Adicionar Extra</button>
-  <div id="listaExtras"></div>
-</div>
+  <!-- MENU -->
+  <aside class="sidebar" id="sidebar">
 
-<!-- Despesas Variáveis -->
-<div class="card">
-  <h3>Despesas do Mês</h3>
-  <input id="despValor" placeholder="Valor">
-  <input id="despCategoria" placeholder="Categoria">
-  <input type="date" id="despData">
-  <button onclick="addDesp()">Adicionar Despesa</button>
-  <div id="listaDespesas"></div>
-</div>
+    <h2>Finanças PRO+</h2>
 
-<!-- Resumo -->
-<div class="card grid">
+    <button onclick="abrirPagina('dashboard')">🏠 Dashboard</button>
+
+    <button onclick="abrirPagina('renda')">💰 Renda Fixa</button>
+
+    <button onclick="abrirPagina('fixas')">📌 Despesas Fixas</button>
+
+    <button onclick="abrirPagina('extras')">💵 Extras</button>
+
+    <button onclick="abrirPagina('despesas')">📉 Despesas</button>
+
+    <button onclick="abrirPagina('graficos')">📊 Gráficos</button>
+
+    <button onclick="abrirPagina('config')">⚙️ Configurações</button>
+
+    <button onclick="trocarTema()">
+  🌙 / ☀️ Tema
+</button>
+    
+  </aside>
+
+  <!-- CONTEÚDO -->
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="page active">
+
+<div class="card">
+
+  <h3>📅 Filtrar Mês</h3>
+
+  <input type="month" id="filtroMes">
+
+</div>
+      
+      <header class="topo">
+        <div>
+          <small>Saldo disponível</small>
+          <h1 id="saldo">R$0</h1>
+        </div>
+      </header>
+
+      <!-- META -->
+      <div class="card">
+        <h3>Meta Mensal</h3>
+
+        <div class="barra-meta">
+          <div id="barraMeta" class="barra-preenchida"></div>
+        </div>
+
+        <p id="metaInfo">R$0 | Falta: R$0</p>
+
+        <p id="alertaMeta"></p>
+
+        <input id="metaValor" placeholder="Valor da meta">
+
+        <button onclick="definirMeta()">
+          Salvar Meta
+        </button>
+      </div>
+
+      <!-- RESUMO -->
+      <div class="card grid">
+
+        <div class="stat">
+          <small>Entradas</small>
+          <h3 id="entradas">R$0</h3>
+        </div>
+
+        <div class="stat">
+          <small>Saídas</small>
+          <h3 id="saidas">R$0</h3>
+        </div>
+
+        <div class="stat">
+          <small>Reserva</small>
+          <h3 id="reserva">R$0</h3>
+        </div>
+
+      </div>
+
+      <div class="card">
+        <h3>Previsão</h3>
+        <p id="previsao"></p>
+      </div>
+
+      <div class="card grid">
+
   <div class="stat">
-    <small>Entradas</small>
-    <h3 id="entradas">R$0</h3>
+    <small>Maior gasto</small>
+    <h3 id="maiorGasto">R$0</h3>
   </div>
 
   <div class="stat">
-    <small>Saídas</small>
-    <h3 id="saidas">R$0</h3>
+    <small>Categoria líder</small>
+    <h3 id="categoriaTop">-</h3>
   </div>
 
   <div class="stat">
-    <small>Reserva</small>
-    <h3 id="reserva">R$0</h3>
+    <small>Média diária</small>
+    <h3 id="mediaDiaria">R$0</h3>
   </div>
+
+  <div class="stat">
+    <small>Score Financeiro</small>
+    <h3 id="scoreFinanceiro">0</h3>
+  </div>
+
 </div>
 
-<!-- Dashboard de Gráficos -->
-<div class="card">
-  <h3>Visão geral</h3>
-  <canvas id="graficoResumo"></canvas>
-</div>
+    </section>
 
-<div class="card">
-  <h3>Gastos por categoria</h3>
-  <canvas id="graficoCategorias"></canvas>
-</div>
+    <!-- RENDA -->
+    <section id="renda" class="page">
 
-<div class="card">
-  <h3>Evolução do saldo</h3>
-  <canvas id="graficoEvolucao"></canvas>
-</div>
+      <div class="card">
 
-<div class="card">
-  <h3>Previsão de saldo futuro (30 dias)</h3>
-  <p id="previsao"></p>
+        <h3>Renda Fixa</h3>
 
-  <button onclick="logout()">Sair</button>
+        <input id="rendaFixaValor" placeholder="Valor">
 
-  <button onclick="limparDados()" style="background:#ef4444; margin-top:10px;">
-    ⚠️ Resetar Tudo
-  </button>
+        <select id="rendaFixaCategoria">
+          <option>Salário</option>
+          <option>Freelance</option>
+          <option>Investimentos</option>
+        </select>
+
+        <button onclick="addRendaFixa()">
+          Adicionar Renda Fixa
+        </button>
+
+        <div id="listaRendaFixa"></div>
+
+      </div>
+
+    </section>
+
+    <!-- FIXAS -->
+    <section id="fixas" class="page">
+
+      <div class="card">
+
+        <h3>Despesas Fixas</h3>
+
+        <input id="despFixaValor" placeholder="Valor">
+
+        <input id="despFixaCategoria" placeholder="Categoria">
+
+        <input
+  type="number"
+  id="diaVencimento"
+  placeholder="Dia do vencimento (1-31)"
+>
+        
+        <select id="tipoDespesa">
+          <option value="recorrente">Recorrente</option>
+          <option value="parcelado">Parcelado</option>
+        </select>
+
+        <button onclick="addDespFixa()">
+          Adicionar Despesa
+        </button>
+
+        <div id="listaDespFixa"></div>
+
+      </div>
+
+    </section>
+
+    <!-- EXTRAS -->
+    <section id="extras" class="page">
+
+      <div class="card">
+
+        <h3>Extras</h3>
+
+        <input id="extraValor" placeholder="Valor">
+
+        <input id="extraCategoria" placeholder="Categoria">
+
+        <input type="date" id="extraData">
+
+        <button onclick="addExtra()">
+          Adicionar Extra
+        </button>
+
+        <div id="listaExtras"></div>
+
+      </div>
+
+    </section>
+
+    <!-- DESPESAS -->
+    <section id="despesas" class="page">
+
+      <div class="card">
+
+        <h3>Despesas do Mês</h3>
+
+        <input id="despValor" placeholder="Valor">
+
+        <input id="despCategoria" placeholder="Categoria">
+
+        <input type="date" id="despData">
+
+        <button onclick="addDesp()">
+          Adicionar Despesa
+        </button>
+
+        <div id="listaDespesas"></div>
+
+      </div>
+
+    </section>
+
+    <!-- GRAFICOS -->
+    <section id="graficos" class="page">
+
+      <div class="card">
+        <h3>Visão Geral</h3>
+        <canvas id="graficoResumo"></canvas>
+      </div>
+
+      <div class="card">
+        <h3>Gastos por categoria</h3>
+        <canvas id="graficoCategorias"></canvas>
+      </div>
+
+      <div class="card">
+        <h3>Evolução do saldo</h3>
+        <canvas id="graficoEvolucao"></canvas>
+      </div>
+
+    </section>
+
+    <!-- CONFIG -->
+    <section id="config" class="page">
+
+      <div class="card">
+
+        <button onclick="logout()">
+          Sair
+        </button>
+
+        <button
+          onclick="limparDados()"
+          style="background:#ef4444;margin-top:10px;"
+        >
+          ⚠️ Resetar Tudo
+        </button>
+
+      </div>
+
+    </section>
+
+  </main>
+
 </div>
 
 <script type="module">
@@ -225,6 +505,25 @@ const listaRendaFixa = document.getElementById("listaRendaFixa");
 const listaDespFixa = document.getElementById("listaDespFixa");
 const listaExtras = document.getElementById("listaExtras");
 const listaDespesas = document.getElementById("listaDespesas");
+const maiorGastoElem = document.getElementById("maiorGasto");
+
+const categoriaTopElem = document.getElementById("categoriaTop");
+
+const mediaDiariaElem = document.getElementById("mediaDiaria");
+
+const scoreFinanceiroElem =
+  document.getElementById("scoreFinanceiro");
+const filtroMes = document.getElementById("filtroMes");
+
+filtroMes.value = mesSelecionado;
+
+filtroMes.addEventListener("change", ()=>{
+
+  mesSelecionado = filtroMes.value;
+
+  atualizar();
+
+});  
   
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -232,6 +531,8 @@ const db = getFirestore(app);
 
 // VARIÁVEIS
 let rendaFixa=[], despFixa=[], extras=[], despesas=[];
+
+filtroMes.value = mesSelecionado;
 let meta = 0;
   
 // LOGOUT
@@ -260,40 +561,49 @@ async function adicionarItem(col, data){
 }
 
 // ✅ RENDA FIXA (com categoria padrão)
-window.addRendaFixa = ()=>{
+window.addRendaFixa = async ()=>{
   const valor = rendaFixaValor.value;
   const categoria = rendaFixaCategoria.value || "Salário";
   if(!valor) return;
 
-  adicionarItem("rendaFixa",{valor:Number(valor),categoria});
+  await adicionarItem("rendaFixa",{valor:Number(valor),categoria});
   rendaFixaValor.value = "";
 rendaFixaCategoria.value = "Salário";
 };
 
 // 🔥 DESPESA FIXA COM PARCELA
-window.addDespFixa = ()=>{
+window.addDespFixa = async ()=>{
   const valor = despFixaValor.value;
   const categoria = despFixaCategoria.value;
 const tipo = tipoDespesa.value;
-  if(!valor || !categoria || !tipo) return;
+  const vencimento = Number(diaVencimento.value);
+  if(!valor || !categoria || !tipo || !vencimento) return;
 
   if(tipo === "parcelado"){
-    const total = Number(prompt("Total de parcelas"));
+   const total = Number(prompt("Total de parcelas"));
 
-    adicionarItem("despesasFixas",{
+if(!total || total <= 0){
+  return;
+}
+
+    await adicionarItem("despesasFixas",{
       valor:Number(valor),
       categoria,
       tipo:"parcelado",
+      vencimento,
+pago:false,
       parcelasTotal: total,
       parcelasPagas: 0
     });
 
   } else {
 
-    adicionarItem("despesasFixas",{
+    await adicionarItem("despesasFixas",{
       valor:Number(valor),
       categoria,
-      tipo:"recorrente"
+      tipo:"recorrente",
+vencimento,
+pago:false
     });
 
   }
@@ -301,6 +611,7 @@ const tipo = tipoDespesa.value;
   // ✅ LIMPA SEMPRE (no final)
   despFixaValor.value = "";
   despFixaCategoria.value = "";
+  diaVencimento.value = "";
 };
 
 // PAGAR PARCELA
@@ -347,7 +658,20 @@ window.limparDados = async ()=>{
   alert("Tudo apagado");
 };
 
-// LISTENER
+
+let timerAtualizar;
+
+function atualizarSeguro(){
+
+  clearTimeout(timerAtualizar);
+
+  timerAtualizar = setTimeout(()=>{
+
+    atualizar();
+
+  },100);
+
+}// LISTENER
 function carregar(col, setter){
   const user = auth.currentUser;
   const ref = collection(db,"usuarios",user.uid,col);
@@ -356,11 +680,11 @@ function carregar(col, setter){
     const arr=[];
     snap.forEach(d=>arr.push({id:d.id,...d.data()}));
     setter(arr);
-    atualizar();
+    atualizarSeguro();
   });
 }
 
-window.addExtra = ()=>{
+window.addExtra = async ()=>{
   const valor = extraValor.value;
   const categoria = extraCategoria.value;
   const data = extraData.value;
@@ -369,7 +693,7 @@ window.addExtra = ()=>{
 
 const num = Number(valor);
 
-adicionarItem("extras",{
+await adicionarItem("extras",{
   valor: num,
   categoria,
   data,
@@ -382,14 +706,14 @@ adicionarItem("extras",{
   extraData.value = "";
 };
 
-window.addDesp = ()=>{
+window.addDesp = async ()=>{
   const valor = despValor.value;
   const categoria = despCategoria.value;
   const data = despData.value;
 
   if(!valor || !categoria) return;
 
-  adicionarItem("despesasMes",{
+  await adicionarItem("despesasMes",{
     valor:Number(valor),
     categoria,
     data
@@ -403,88 +727,280 @@ window.addDesp = ()=>{
 
 let graficoCat, graficoEvo, graficoResumo;
 
+  function corTema(){
+
+  return getComputedStyle(document.body)
+    .getPropertyValue('--text')
+    .trim();
+
+}
+
 function gerarGraficos(entradas, saidas){
-  // 🔹 Agrupar por categoria
+
+  // 🔥 destruir gráficos antigos
   if(graficoResumo) graficoResumo.destroy();
-if(graficoCat) graficoCat.destroy();
-if(graficoEvo) graficoEvo.destroy();
-if(entradas === 0 && saidas === 0){
-  return;
-}
-  
-  const categorias = {};
-  
-  despesas.forEach(d=>{
-    categorias[d.categoria] = (categorias[d.categoria]||0) + d.valor;
-  });
-
-const labels = Object.keys(categorias);
-const valores = Object.values(categorias);
-
-if(labels.length === 0){
-  return;
-}
-
   if(graficoCat) graficoCat.destroy();
-
-  graficoCat = new Chart(document.getElementById("graficoCategorias"), {
-    type: "doughnut",
-    data: {
-      labels,
-      datasets: [{
-        data: valores
-      }]
-    }
-  });
-
-  // 🔹 Evolução do saldo
-  let saldoTemp = 0;
-  const dias = [];
-  const valoresEvo = [];
-
-  despesas
-    .sort((a,b)=> (a.data || "").localeCompare(b.data || ""))
-    .forEach(d=>{
-      saldoTemp -= d.valor;
-      dias.push(d.data || "dia");
-      valoresEvo.push(saldoTemp);
-    });
-
   if(graficoEvo) graficoEvo.destroy();
 
-  graficoEvo = new Chart(document.getElementById("graficoEvolucao"), {
-    type: "line",
-    data: {
-      labels: dias,
-      datasets: [{
-        label:"Saldo",
-        data: valoresEvo
-      }]
-    }
+  // sem dados
+  if(entradas === 0 && saidas === 0){
+    return;
+  }
+
+  // =========================
+  // 📊 CATEGORIAS
+  // =========================
+
+  const categorias = {};
+
+  despesas
+    .filter(d=>pertenceMes(d.data))
+    .forEach(d=>{
+
+      categorias[d.categoria] =
+        (categorias[d.categoria] || 0) + d.valor;
+
+    });
+
+  const labels = Object.keys(categorias);
+  const valores = Object.values(categorias);
+
+  if(labels.length > 0){
+
+    graficoCat = new Chart(
+      document.getElementById("graficoCategorias"),
+      {
+
+        type:"doughnut",
+
+        data:{
+          labels,
+          datasets:[{
+            data: valores
+          }]
+        },
+
+        options:{
+
+          plugins:{
+
+            legend:{
+              labels:{
+                color: corTema()
+              }
+            }
+
+          }
+
+        }
+
+      }
+    );
+
+  }
+
+  // =========================
+  // 📈 EVOLUÇÃO
+  // =========================
+
+ let saldoTemp = 0;
+
+const movimentos = [];
+
+// entradas extras
+extras
+  .filter(d=>
+    pertenceMes(d.data) &&
+    d.tipo === "entrada"
+  )
+  .forEach(d=>{
+
+    movimentos.push({
+      data:d.data,
+      valor:d.valor
+    });
+
   });
 
-if(graficoResumo) graficoResumo.destroy();
+// saídas extras
+extras
+  .filter(d=>
+    pertenceMes(d.data) &&
+    d.tipo === "saida"
+  )
+  .forEach(d=>{
 
-graficoResumo = new Chart(document.getElementById("graficoResumo"), {
-  type: "bar",
-  data: {
-    labels: ["Entradas", "Saídas"],
-    datasets: [{
-      label: "Resumo Financeiro",
-      data: [entradas, saidas],
-      backgroundColor: ["#22c55e", "#ef4444"],
-      borderRadius: 8
-    }]
-  },
-  options: {
-    plugins: {
-      legend: {
-        display: false
-      }
-    }
-  }
+    movimentos.push({
+      data:d.data,
+      valor:-d.valor
+    });
+
+  });
+
+// despesas
+despesas
+  .filter(d=>pertenceMes(d.data))
+  .forEach(d=>{
+
+    movimentos.push({
+      data:d.data,
+      valor:-d.valor
+    });
+
+  });
+
+// ordenar
+movimentos.sort((a,b)=>
+  (a.data || "").localeCompare(b.data || "")
+);
+
+const dias = [];
+const valoresEvo = [];
+
+// calcular evolução
+movimentos.forEach(m=>{
+
+  saldoTemp += m.valor;
+
+  dias.push(m.data);
+
+  valoresEvo.push(saldoTemp);
+
 });
-  
+
+  graficoEvo = new Chart(
+    document.getElementById("graficoEvolucao"),
+    {
+
+      type:"line",
+
+      data:{
+        labels:dias,
+
+        datasets:[{
+
+          label:"Saldo",
+
+          data:valoresEvo,
+
+          tension:0.3
+
+        }]
+      },
+
+      options:{
+
+        plugins:{
+
+          legend:{
+            labels:{
+              color: corTema()
+            }
+          }
+
+        },
+
+        scales:{
+
+          y:{
+            ticks:{
+              color: corTema()
+            },
+            grid:{
+              color:"rgba(128,128,128,0.15)"
+            }
+          },
+
+          x:{
+            ticks:{
+              color: corTema()
+            },
+            grid:{
+              color:"rgba(128,128,128,0.15)"
+            }
+          }
+
+        }
+
+      }
+
+    }
+  );
+
+  // =========================
+  // 📉 RESUMO
+  // =========================
+
+  graficoResumo = new Chart(
+    document.getElementById("graficoResumo"),
+    {
+
+      type:"bar",
+
+      data:{
+
+        labels:["Entradas","Saídas"],
+
+        datasets:[{
+
+          label:"Resumo Financeiro",
+
+          data:[entradas, saidas],
+
+          backgroundColor:[
+            "#22c55e",
+            "#ef4444"
+          ],
+
+          borderRadius:8
+
+        }]
+
+      },
+
+      options:{
+
+        plugins:{
+
+          legend:{
+
+            display:false,
+
+            labels:{
+              color: corTema()
+            }
+
+          }
+
+        },
+
+        scales:{
+
+          y:{
+            ticks:{
+              color: corTema()
+            },
+            grid:{
+              color:"rgba(128,128,128,0.15)"
+            }
+          },
+
+          x:{
+            ticks:{
+              color: corTema()
+            },
+            grid:{
+              color:"rgba(128,128,128,0.15)"
+            }
+          }
+
+        }
+
+      }
+
+    }
+  );
+
 }
 
 function gerarDica(saldo, entradas, saidas){
@@ -493,6 +1009,23 @@ function gerarDica(saldo, entradas, saidas){
   if(reservaElem.innerText === "R$0,00") return "💡 Comece uma reserva!";
   return "✅ Situação financeira saudável";
 }
+
+window.marcarPago = async(id)=>{
+
+  const user = auth.currentUser;
+
+  if(!user) return;
+
+  const item = despFixa.find(d=>d.id===id);
+
+  await updateDoc(
+    doc(db,"usuarios",user.uid,"despesasFixas",id),
+    {
+      pago: !item.pago
+    }
+  );
+
+};
   
 window.removerItem = async(col,id)=>{
   const user = auth.currentUser;
@@ -502,6 +1035,46 @@ window.removerItem = async(col,id)=>{
 };
   
 // UI
+function pertenceMes(data){
+
+  if(!data) return false;
+
+  return data.startsWith(mesSelecionado);
+
+}
+
+function statusConta(vencimento, pago){
+
+  if(pago){
+    return {
+      texto:"✅ Pago",
+      cor:"#22c55e"
+    };
+  }
+
+  const hoje = new Date().getDate();
+
+  if(vencimento < hoje){
+    return {
+      texto:"🔴 Atrasada",
+      cor:"#ef4444"
+    };
+  }
+
+  if(vencimento === hoje){
+    return {
+      texto:"🟡 Vence Hoje",
+      cor:"#facc15"
+    };
+  }
+
+  return {
+    texto:"🟢 Em dia",
+    cor:"#22c55e"
+  };
+
+}
+  
 function atualizar(){
   let saldo = 0, entradas = 0, saidas = 0;
 
@@ -535,20 +1108,42 @@ function atualizar(){
   let htmlDespFixa = "";
 
   despFixa.forEach(d=>{
+    const status = statusConta(d.vencimento, d.pago);
     let pagar = true;
 
     if(d.tipo === "parcelado"){
       if(d.parcelasPagas >= d.parcelasTotal) pagar = false;
     }
 
-    if(pagar){
-      saldo -= d.valor;
-      saidas += d.valor;
-    }
+   if(pagar && !d.pago){
+  saldo -= d.valor;
+  saidas += d.valor;
+}
 
     htmlDespFixa += `
       <div class="transacao saida">
-        ${d.categoria} - ${Number(d.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+        <div>
+
+  <strong>${d.categoria}</strong><br>
+
+  ${Number(d.valor).toLocaleString("pt-BR",{
+    style:"currency",
+    currency:"BRL"
+  })}
+
+  <br>
+
+  <small style="color:${status.cor}">
+    ${status.texto}
+  </small>
+
+</div>
+
+<button onclick="marcarPago('${d.id}')">
+
+  ${d.pago ? "↩️ Reabrir" : "✅ Pago"}
+
+</button>
 
         <button onclick="editarItem('despesasFixas','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
         <button class="delete" onclick="removerItem('despesasFixas','${d.id}')">🗑</button>
@@ -565,7 +1160,9 @@ function atualizar(){
   listaExtras.innerHTML = "";
   let htmlExtras = "";
 
-  extras.forEach(d=>{
+  extras
+.filter(d=>pertenceMes(d.data))
+.forEach(d=>{
     if(d.tipo === "entrada"){
       saldo += d.valor;
       entradas += d.valor;
@@ -574,14 +1171,28 @@ function atualizar(){
       saidas += d.valor;
     }
 
-    htmlExtras += `
-      <div class="transacao ${d.tipo === "entrada" ? "entrada" : "saida"}">
-        ${d.categoria} - ${Number(d.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+htmlExtras += `
+  <div class="transacao ${d.tipo === "entrada" ? "entrada" : "saida"}">
+    
+    ${d.categoria} - ${Number(d.valor).toLocaleString("pt-BR",{
+      style:"currency",
+      currency:"BRL"
+    })}
 
-        <button onclick="editarItem('extras','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
-        <button class="delete" onclick="removerItem('extras','${d.id}')">🗑</button>
-      </div>
-    `;
+    <button onclick='editarItem(
+      "extras",
+      "${d.id}",
+      ${d.valor},
+      ${JSON.stringify(d.categoria)}
+    )'>✏️</button>
+
+    <button class="delete"
+      onclick="removerItem('extras','${d.id}')">
+      🗑
+    </button>
+
+  </div>
+`;
   });
 
   listaExtras.innerHTML = htmlExtras;
@@ -593,7 +1204,9 @@ function atualizar(){
   listaDespesas.innerHTML = "";
   let htmlDespesas = "";
 
-  despesas.forEach(d=>{
+  despesas
+.filter(d=>pertenceMes(d.data))
+.forEach(d=>{
     saldo -= d.valor;
     saidas += d.valor;
 
@@ -613,7 +1226,10 @@ function atualizar(){
   // =======================
   // 🧠 RESERVA (20%)
   // =======================
-  let reserva = saldo > 0 ? saldo * 0.2 : 0;
+  let reserva =
+  entradas > saidas
+    ? (entradas - saidas) * 0.2
+    : 0;
 
 
   // =======================
@@ -634,7 +1250,7 @@ function atualizar(){
   atualizarMeta(saldo);
   gerarGraficos(entradas, saidas);
   calcularPrevisao(saldo);
-
+atualizarDashboard(entradas, saidas);
 
   // =======================
   // ⚠️ ALERTA INTELIGENTE
@@ -644,12 +1260,107 @@ function atualizar(){
     previsao.innerText += " ⚠️ Você está gastando mais do que ganha!";
   }
 }
+
+function atualizarDashboard(entradas, saidas){
+
+  // FILTRAR DESPESAS DO MÊS
+  const despesasMes =
+    despesas.filter(d=>pertenceMes(d.data));
+
+  // MAIOR GASTO
+  let maior = 0;
+  let categoriaMaior = "-";
+
+  despesasMes.forEach(d=>{
+
+    if(d.valor > maior){
+
+      maior = d.valor;
+      categoriaMaior = d.categoria;
+
+    }
+
+  });
+
+  maiorGastoElem.innerText =
+    maior.toLocaleString("pt-BR",{
+      style:"currency",
+      currency:"BRL"
+    });
+
+  // CATEGORIA TOP
+  const categorias = {};
+
+  despesasMes.forEach(d=>{
+
+    categorias[d.categoria] =
+      (categorias[d.categoria] || 0) + d.valor;
+
+  });
+
+  let topCategoria = "-";
+  let topValor = 0;
+
+  Object.entries(categorias).forEach(([cat,val])=>{
+
+    if(val > topValor){
+
+      topValor = val;
+      topCategoria = cat;
+
+    }
+
+  });
+
+  categoriaTopElem.innerText = topCategoria;
+
+  // MÉDIA DIÁRIA
+ const totalDespesasMes =
+  despesasMes.reduce((a,b)=>a+b.valor,0);
+
+const media =
+  despesasMes.length
+    ? totalDespesasMes / 30
+    : 0;
+
+  mediaDiariaElem.innerText =
+    media.toLocaleString("pt-BR",{
+      style:"currency",
+      currency:"BRL"
+    });
+
+  // SCORE FINANCEIRO
+  let score = 100;
+
+  if(saidas > entradas){
+    score -= 40;
+  }
+
+  if(saidas > entradas * 0.8){
+    score -= 20;
+  }
+
+ if((entradas - saidas) < entradas * 0.1){
+  score -= 10;
+}
+
+  if(score < 0){
+    score = 0;
+  }
+
+  scoreFinanceiroElem.innerText =
+    score + "/100";
+
+}
   
 function calcularPrevisao(saldo){
 
-  const mediaGasto = despesas.length 
-    ? despesas.reduce((a,b)=>a+b.valor,0)/despesas.length 
-    : 0;
+  const despesasMes =
+  despesas.filter(d=>pertenceMes(d.data));
+
+const mediaGasto = despesasMes.length
+  ? despesasMes.reduce((a,b)=>a+b.valor,0) / despesasMes.length
+  : 0;
 
   const somaDespesasFixas = despFixa.reduce((total,d)=>{
     if(d.tipo === "recorrente") return total + d.valor;
@@ -659,7 +1370,15 @@ function calcularPrevisao(saldo){
     return total;
   },0);
 
-  const previsao30 = saldo - (mediaGasto * 30) - somaDespesasFixas;
+  const totalMes =
+  despesasMes.reduce((a,b)=>a+b.valor,0);
+
+const mediaDiaria =
+  totalMes / 30;
+
+const previsao30 =
+  saldo - (mediaDiaria * 30)
+  - somaDespesasFixas;
 
   previsao.innerText = 
     "Saldo estimado em 30 dias: " +
@@ -724,6 +1443,67 @@ onAuthStateChanged(auth, async user => {
   carregar("extras", v=>extras=v);
   carregar("despesasMes", v=>despesas=v);
 });
+
+}
+
+// MENU MOBILE
+window.toggleMenu = ()=>{
+
+  document
+    .getElementById("sidebar")
+    .classList.toggle("active");
+
+};
+
+// TROCAR PÁGINAS
+window.abrirPagina = (id)=>{
+
+  document
+    .querySelectorAll(".page")
+    .forEach(p=>p.classList.remove("active"));
+
+  document
+    .getElementById(id)
+    .classList.add("active");
+
+  // fecha menu no celular
+  if(window.innerWidth < 768){
+
+    document
+      .getElementById("sidebar")
+      .classList.remove("active");
+
+  }
+
+};
+
+  // 🌙 TEMA
+window.trocarTema = ()=>{
+
+  document.body.classList.toggle("light");
+
+  const claro =
+    document.body.classList.contains("light");
+
+  localStorage.setItem(
+    "tema",
+    claro ? "light" : "dark"
+  );
+
+  atualizar();
+
+};
+
+// PWA
+if("serviceWorker" in navigator){
+
+  navigator.serviceWorker
+    .register("./sw.js")
+    .then(()=>{
+
+      console.log("PWA ativo");
+
+    });
 
 }
   
