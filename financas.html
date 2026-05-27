@@ -40,40 +40,109 @@
 
 }
 body{
-  font-family:Arial;
+  font-family:'Segoe UI', Arial, sans-serif;
   background:var(--bg);
   color:var(--text);
   margin:0;
   padding:0;
-overflow-x:hidden;
+  overflow-x:hidden;
 }
-  
-.card{background:var(--card); padding:15px; border-radius:12px; margin-top:15px; box-shadow:0 4px 10px rgba(0,0,0,0.3);}
-.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:15px;}
-.stat{text-align:center;}
-input,select{width:100%; padding:8px; border:none; border-radius:8px; margin:5px 0;}
-button{width:100%; padding:10px; border:none; border-radius:8px; background:var(--accent); color:white; cursor:pointer;}
-  button:hover{opacity:0.9; transform:scale(1.02); transition:0.2s;}
 
-  .barra-meta{background:#334155; border-radius:10px; height:20px; margin-top:10px;}
+/* ===== CARDS ===== */
 
-  .barra-preenchida{height:100%; width:0%; background:var(--accent); border-radius:10px; transition:0.5s;}
+.card{
+  background:linear-gradient(145deg,#1e293b,#0f172a);
+  border-radius:16px;
+  padding:15px;
+  margin-top:15px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.4);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:15px;
+}
+
+.stat{
+  text-align:center;
+}
+
+/* ===== INPUTS ===== */
+
+input,
+select{
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  margin:5px 0;
+  box-sizing:border-box;
+}
+
+/* ===== BOTÕES GERAIS ===== */
+
+button{
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:var(--accent);
+  color:white;
+  cursor:pointer;
+  transition:0.2s;
+  box-sizing:border-box;
+}
+
+button:hover{
+  opacity:0.9;
+  transform:scale(1.02);
+}
+
+/* ===== META ===== */
+
+.barra-meta{
+  background:#334155;
+  border-radius:10px;
+  height:20px;
+  margin-top:10px;
+}
+
+.barra-preenchida{
+  height:100%;
+  width:0%;
+  background:var(--accent);
+  border-radius:10px;
+  transition:0.5s;
+}
+
+/* ===== TRANSAÇÕES ===== */
 
 .transacao{
   display:flex;
   justify-content:space-between;
+  align-items:center;
+  gap:10px;
   padding:10px;
   border-bottom:1px solid #334155;
   transition:0.2s;
+  flex-wrap:wrap;
 }
 
 .transacao:hover{
   background:#334155;
-  transform:scale(1.02);
+  transform:scale(1.01);
 }
 
+.transacao button{
+  width:auto;
+  padding:6px 10px;
+  margin-left:5px;
+}
+
+/* ===== TOPO ===== */
+
 .topo{
-  background: linear-gradient(135deg,#22c55e,#15803d);
+  background:linear-gradient(135deg,#22c55e,#15803d);
   padding:20px;
   border-radius:16px;
   margin-bottom:15px;
@@ -88,39 +157,43 @@ button{width:100%; padding:10px; border:none; border-radius:8px; background:var(
   font-size:28px;
 }
 
-.card{
-  background: linear-gradient(145deg,#1e293b,#0f172a);
-  border-radius:16px;
-  padding:15px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-}
+/* ===== CANVAS ===== */
 
-.transacao button{
-  width:auto;
-  padding:5px 8px;
-}  
-
-  canvas{
+canvas{
   margin-top:10px;
+  max-width:100%;
 }
-  
-button{
-  margin-left:5px;
+
+/* ===== STATUS ===== */
+
+.entrada{
+  color:#22c55e;
 }
-  .entrada{color:#22c55e;} .saida{color:#ef4444;}
 
-  .delete{background:var(--danger); padding:4px 8px; font-size:12px; border-radius:6px;}
+.saida{
+  color:#ef4444;
+}
 
-  .alerta{color:var(--warning); font-weight:bold;}
+.delete{
+  background:var(--danger);
+  padding:4px 8px;
+  font-size:12px;
+  border-radius:6px;
+}
 
-  @media(max-width:600px){.grid{grid-template-columns:1fr;}}
+.alerta{
+  color:var(--warning);
+  font-weight:bold;
+}
 
-/* ===== MENU LATERAL ===== */
+/* ===== APP ===== */
 
 .app{
   display:flex;
   min-height:100vh;
 }
+
+/* ===== MENU LATERAL ===== */
 
 .sidebar{
   width:250px;
@@ -130,26 +203,48 @@ button{
   left:0;
   bottom:0;
   padding:20px;
-  overflow:auto;
+  overflow-y:auto;
+  overflow-x:hidden;
   transition:0.3s;
   z-index:1000;
+  box-sizing:border-box;
 }
 
 .sidebar h2{
   color:#22c55e;
   margin-bottom:20px;
+  font-size:34px;
+  line-height:1.3;
 }
+
+/* ===== BOTÕES MENU ===== */
 
 .sidebar button{
   width:100%;
   margin-bottom:10px;
   background:var(--menuBtn);
   text-align:left;
+
+  padding:14px 16px;
+  min-height:52px;
+
+  display:flex;
+  align-items:center;
+
+  font-size:15px;
+  line-height:1.4;
+
+  overflow:visible;
+  white-space:nowrap;
+
+  margin-left:0;
 }
 
 .sidebar button:hover{
   background:#22c55e;
 }
+
+/* ===== CONTEÚDO ===== */
 
 .content{
   flex:1;
@@ -159,6 +254,8 @@ button{
   box-sizing:border-box;
 }
 
+/* ===== PÁGINAS ===== */
+
 .page{
   display:none;
 }
@@ -167,19 +264,24 @@ button{
   display:block;
 }
 
-/* BOTÃO MENU */
+/* ===== BOTÃO MENU MOBILE ===== */
+
 .menuBtn{
   display:none;
   position:fixed;
   top:10px;
   left:10px;
   z-index:2000;
+
   width:auto;
+
   padding:10px 15px;
+
   border-radius:10px;
 }
 
-/* MOBILE */
+/* ===== RESPONSIVO ===== */
+
 @media(max-width:768px){
 
   .sidebar{
@@ -197,6 +299,22 @@ button{
 
   .menuBtn{
     display:block;
+  }
+
+}
+
+@media(max-width:600px){
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .topo h1{
+    font-size:24px;
+  }
+
+  .sidebar{
+    width:240px;
   }
 
 }
