@@ -51,11 +51,11 @@ body{
 /* ===== CARDS ===== */
 
 .card{
-  background:linear-gradient(145deg,#1e293b,#0f172a);
+  background:var(--card);
   border-radius:16px;
   padding:15px;
   margin-top:15px;
-  box-shadow:0 8px 20px rgba(0,0,0,0.4);
+  box-shadow:0 8px 20px rgba(0,0,0,0.15);
 }
 
 .grid{
@@ -235,7 +235,8 @@ canvas{
   line-height:1.4;
 
   overflow:visible;
-  white-space:nowrap;
+  white-space:normal;
+word-break:break-word;
 
   margin-left:0;
 }
@@ -650,7 +651,12 @@ const db = getFirestore(app);
 // VARIÁVEIS
 let rendaFixa=[], despFixa=[], extras=[], despesas=[];
 
+// 📅 mês atual padrão
+let mesSelecionado =
+  new Date().toISOString().slice(0,7);
+
 filtroMes.value = mesSelecionado;
+
 let meta = 0;
   
 // LOGOUT
@@ -1504,7 +1510,17 @@ const previsao30 =
 }
   
 function atualizarMeta(saldo){
-  if(meta <= 0) return;
+  if(meta <= 0){
+
+  document.getElementById("barraMeta").style.width = "0%";
+
+  document.getElementById("metaInfo").innerText =
+    "Defina uma meta mensal";
+
+  document.getElementById("alertaMeta").innerText = "";
+
+  return;
+}
 
   const barra = document.getElementById("barraMeta");
   const info = document.getElementById("metaInfo");
