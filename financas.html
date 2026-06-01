@@ -680,20 +680,23 @@ async function adicionarItem(col, data){
   const user = auth.currentUser;
   if(!user) return;
 
-try {
+  try {
 
-  await addDoc(
-    collection(db,"usuarios",user.uid,col),
-    data
-  );
+    await addDoc(
+      collection(db,"usuarios",user.uid,col),
+      data
+    );
 
-  console.log("SALVO");
+    console.log("SALVO");
 
-} catch(e){
+  } catch(e){
 
-  console.error("ERRO:", e);
+    console.error("ERRO:", e);
 
+  }
 }
+
+window.addRendaFixa = async ()=>{
 
 // ✅ RENDA FIXA (com categoria padrão)
 window.addRendaFixa = async ()=>{
