@@ -656,14 +656,6 @@ const db = getFirestore(app);
 
 // VARIÁVEIS
 let rendaFixa=[], despFixa=[], extras=[], despesas=[];
-
-// 📅 mês atual padrão
-let mesSelecionado =
-  new Date().toISOString().slice(0,7);
-
-filtroMes.value = mesSelecionado;
-
-let meta = 0;
   
 // LOGOUT
 window.logout = ()=> signOut(auth).then(()=>window.location.href="login.html");
