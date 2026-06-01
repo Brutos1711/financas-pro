@@ -651,6 +651,7 @@ filtroMes.addEventListener("change", ()=>{
 });
   
 const app = initializeApp(firebaseConfig);
+  console.log("Firebase iniciado");
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -679,7 +680,19 @@ async function adicionarItem(col, data){
   const user = auth.currentUser;
   if(!user) return;
 
-  await addDoc(collection(db,"usuarios",user.uid,col), data);
+try {
+
+  await addDoc(
+    collection(db,"usuarios",user.uid,col),
+    data
+  );
+
+  console.log("SALVO");
+
+} catch(e){
+
+  console.error("ERRO:", e);
+
 }
 
 // ✅ RENDA FIXA (com categoria padrão)
