@@ -656,7 +656,13 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // VARIÁVEIS
-let rendaFixa=[], despFixa=[], extras=[], despesas=[];
+let rendaFixa = [];
+let despFixa = [];
+let extras = [];
+let despesas = [];
+
+let meta = 0;
+
   
 // LOGOUT
 window.logout = ()=> signOut(auth).then(()=>window.location.href="login.html");
