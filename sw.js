@@ -1,31 +1,24 @@
-const CACHE_NAME = "financas-pro-cache-v2";
+const CACHE_NAME = "financas-pro-cache-v3";
 
 const urlsToCache = [
   "./",
-  "./index.html",
-  "./manifest.json"
+  "./financas.html",
+  "./login.html",
+  "./manifest.json",
+  "./icon-192.jpg",
+  "./icon-512.jpg"
 ];
 
-// INSTALAR
 self.addEventListener("install", event => {
-
   event.waitUntil(
-
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
-
   );
-
 });
 
-// CACHE
 self.addEventListener("fetch", event => {
-
   event.respondWith(
-
     caches.match(event.request)
       .then(response => response || fetch(event.request))
-
   );
-
 });
