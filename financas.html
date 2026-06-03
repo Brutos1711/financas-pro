@@ -482,24 +482,6 @@ word-break:break-word;
         <h3>Previsão</h3>
         <p id="previsao"></p>
       </div>
-
-<div class="card">
-
-  <h3>🏦 Reserva Financeira</h3>
-
-  <input
-    id="valorReserva"
-    type="number"
-    placeholder="Valor para guardar"
-  >
-
-  <button onclick="salvarReserva()">
-    Adicionar à Reserva
-  </button>
-
-  <div id="historicoReserva"></div>
-
-</div>
       
       <div class="card grid">
 
@@ -527,6 +509,24 @@ word-break:break-word;
   <h3 id="scoreFinanceiro">0</h3>
 </div>
 
+<div class="card">
+
+  <h3>🏦 Reserva Financeira</h3>
+
+  <input
+    id="valorReserva"
+    type="number"
+    placeholder="Valor para guardar"
+  >
+
+  <button onclick="salvarReserva()">
+    Adicionar à Reserva
+  </button>
+
+  <div id="historicoReserva"></div>
+
+</div>
+        
 </div>
 
     </section>
@@ -887,7 +887,13 @@ window.limparDados = async ()=>{
   if(prompt("Digite CONFIRMAR") !== "CONFIRMAR") return;
 
   const user = auth.currentUser;
-  const cols = ["rendaFixa","despesasFixas","extras","despesasMes"];
+  const cols = [
+  "rendaFixa",
+  "despesasFixas",
+  "extras",
+  "despesasMes",
+  "reservas"
+];
 
   for(const c of cols){
     const snap = await getDocs(collection(db,"usuarios",user.uid,c));
@@ -1572,7 +1578,7 @@ if(hist){
 
       <button
         class="delete"
-        onclick="removerReserva('${r.id}')"
+        onclick="removerItem('reservas','${r.id}')"
       >
         🗑
       </button>
