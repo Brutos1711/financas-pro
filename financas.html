@@ -159,12 +159,14 @@ button:hover{
 
 .topo h1{
   margin:5px 0 0;
-  font-size:52px;
-  font-weight:900;
-  color:#ffffff;
+}
 
+#saldo{
+  font-size:56px;
+  font-weight:800;
+  color:#fff;
   text-shadow:
-    0 3px 10px rgba(0,0,0,.35);
+    0 4px 12px rgba(0,0,0,0.35);
 }
 
 .badgeSaldo{
@@ -210,6 +212,17 @@ canvas{
   font-weight:bold;
 }
 
+.statusSaldo{
+  display:inline-block;
+  margin-top:12px;
+  padding:8px 14px;
+  border-radius:999px;
+  font-size:14px;
+  font-weight:600;
+  background:rgba(0,0,0,0.15);
+  color:white;
+}
+  
 /* ===== APP ===== */
 
 .app{
@@ -394,14 +407,13 @@ word-break:break-word;
       
       <header class="topo">
   <div>
-
     <small>Saldo disponível</small>
 
     <h1 id="saldo">R$0</h1>
 
-    <span id="statusSaldo" class="badgeSaldo">
+    <div id="statusSaldo" class="statusSaldo">
       🟢 Situação Positiva
-    </span>
+    </div>
 
   </div>
 </header>
@@ -1640,9 +1652,9 @@ function atualizarMeta(saldo){
     alerta.innerText = "";
   }
   if(saldo < 0){
-  saldoElem.style.color = "#ef4444";
+  saldoElem.style.color = "#ffd4d4";
 }else{
-  saldoElem.style.color = "#22c55e";
+  saldoElem.style.color = "#ffffff";
 }
 }
   
