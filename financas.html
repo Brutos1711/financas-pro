@@ -143,20 +143,44 @@ button:hover{
 
 .topo{
   background:linear-gradient(135deg,#22c55e,#15803d);
-  padding:20px;
-  border-radius:16px;
+  padding:25px;
+  border-radius:20px;
   margin-bottom:15px;
+
+  box-shadow:
+    0 0 25px rgba(34,197,94,.35);
 }
 
 .topo small{
-  opacity:0.8;
+  color:#ffffff;
+  opacity:0.95;
+  font-size:15px;
 }
 
 .topo h1{
   margin:5px 0 0;
-  font-size:28px;
+  font-size:52px;
+  font-weight:900;
+  color:#ffffff;
+
+  text-shadow:
+    0 3px 10px rgba(0,0,0,.35);
 }
 
+.badgeSaldo{
+  display:inline-block;
+  margin-top:10px;
+  padding:8px 14px;
+  border-radius:999px;
+
+  background:rgba(0,0,0,.18);
+
+  color:#fff;
+
+  font-size:13px;
+  font-weight:600;
+}
+  
 /* ===== CANVAS ===== */
 
 canvas{
@@ -369,11 +393,18 @@ word-break:break-word;
 </div>
       
       <header class="topo">
-        <div>
-          <small>Saldo disponível</small>
-          <h1 id="saldo">R$0</h1>
-        </div>
-      </header>
+  <div>
+
+    <small>Saldo disponível</small>
+
+    <h1 id="saldo">R$0</h1>
+
+    <span id="statusSaldo" class="badgeSaldo">
+      🟢 Situação Positiva
+    </span>
+
+  </div>
+</header>
 
       <!-- META -->
       <div class="card">
@@ -1405,8 +1436,27 @@ htmlExtras += `
   // 🎨 ATUALIZA UI
   // =======================
   saldoElem.innerText = saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  const statusSaldo =
+  document.getElementById("statusSaldo");
+
+if(saldo < 0){
+
+  statusSaldo.innerHTML =
+    "🔴 Saldo Negativo";
+
+}else if(saldo < 1000){
+
+  statusSaldo.innerHTML =
+    "🟡 Atenção ao saldo";
+
+}else{
+
+  statusSaldo.innerHTML =
+    "🟢 Situação Positiva";
+
+}
   saldoElem.style.transition = "0.4s";
-  saldoElem.style.color = saldo < 0 ? "#ef4444" : "#22c55e";
+saldoElem.style.color = "#ffffff";
 
   entradasElem.innerText = entradas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
   saidasElem.innerText = saidas.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
