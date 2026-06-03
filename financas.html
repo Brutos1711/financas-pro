@@ -704,13 +704,25 @@ async function adicionarItem(col, data){
 
 // ✅ RENDA FIXA (com categoria padrão)
 window.addRendaFixa = async ()=>{
+
   const valor = rendaFixaValor.value;
-  const categoria = rendaFixaCategoria.value || "Salário";
+
   if(!valor) return;
 
-  await adicionarItem("rendaFixa",{valor:Number(valor),categoria});
+  const num = Number(
+    valor.replace(/\./g,"")
+         .replace(",",".")
+  );
+
+  const categoria = rendaFixaCategoria.value || "Salário";
+
+  await adicionarItem("rendaFixa",{
+    valor: num,
+    categoria
+  });
+
   rendaFixaValor.value = "";
-rendaFixaCategoria.value = "Salário";
+  rendaFixaCategoria.value = "Salário";
 };
 
 // 🔥 DESPESA FIXA COM PARCELA
@@ -1226,19 +1238,31 @@ function atualizar(){
   listaRendaFixa.innerHTML = "";
   let htmlRenda = "";
 
-  rendaFixa.forEach(d=>{
-    saldo += d.valor;
-    entradas += d.valor;
+rendaFixa.forEach(d=>{
 
-    htmlRenda += `
-      <div class="transacao entrada">
-        ${d.categoria} - ${Number(d.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+  console.log("RENDA", d);
 
-        <button onclick="editarItem('rendaFixa','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
-        <button class="delete" onclick="removerItem('rendaFixa','${d.id}')">🗑</button>
-      </div>
-    `;
-  });
+  saldo += Number(d.valor || 0);
+  entradas += Number(d.valor || 0);
+
+  htmlRenda += `
+    <div class="transacao entrada">
+      ${d.categoria} -
+      ${Number(d.valor).toLocaleString("pt-BR",{
+        style:"currency",
+        currency:"BRL"
+      })}
+
+      <button onclick="editarItem('rendaFixa','${d.id}',${d.valor},'${d.categoria}')">✏️</button>
+
+      <button class="delete"
+        onclick="removerItem('rendaFixa','${d.id}')">
+        🗑
+      </button>
+    </div>
+  `;
+
+});
 
   listaRendaFixa.innerHTML = htmlRenda;
 
@@ -1258,8 +1282,8 @@ function atualizar(){
     }
 
    if(pagar && !d.pago){
-  saldo -= d.valor;
-  saidas += d.valor;
+  saldo -= Number(d.valor || 0);
+  saidas += Number(d.valor || 0);
 }
 
     htmlDespFixa += `
@@ -1302,16 +1326,19 @@ function atualizar(){
   listaExtras.innerHTML = "";
   let htmlExtras = "";
 
-  extras
+extras
 .filter(d=>pertenceMes(d.data))
 .forEach(d=>{
-    if(d.tipo === "entrada"){
-      saldo += d.valor;
-      entradas += d.valor;
-    } else {
-      saldo -= d.valor;
-      saidas += d.valor;
-    }
+
+  const valor = Number(d.valor || 0);
+
+  if(d.tipo === "entrada"){
+    saldo += valor;
+    entradas += valor;
+  }else{
+    saldo -= valor;
+    saidas += valor;
+  }
 
 htmlExtras += `
   <div class="transacao ${d.tipo === "entrada" ? "entrada" : "saida"}">
@@ -1349,8 +1376,8 @@ htmlExtras += `
   despesas
 .filter(d=>pertenceMes(d.data))
 .forEach(d=>{
-    saldo -= d.valor;
-    saidas += d.valor;
+    saldo -= Number(d.valor || 0);
+    saidas += Number(d.valor || 0);
 
     htmlDespesas += `
       <div class="transacao saida">
